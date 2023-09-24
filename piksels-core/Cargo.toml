@@ -12,4 +12,6 @@ keywords = ["graphics", "rendering"]
 categories = ["graphics", "rendering::graphics-api"]
 publish = false
 
-[dependencies]
+[dependencies.piksels-backend]
+version = "0.0.0"
+path = "../piksels-backend"

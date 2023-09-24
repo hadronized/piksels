@@ -1,5 +1,5 @@
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub struct VertexAttrDesc {
+pub struct VertexAttr {
   pub index: usize,
   pub name: &'static str,
   pub ty: Type,
