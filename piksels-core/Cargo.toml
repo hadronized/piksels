@@ -10,6 +10,6 @@ repository = "https://github.com/phaazon/piksels"
 license = "BSD-3-Clause"
 keywords = ["graphics", "rendering"]
 categories = ["graphics", "rendering::graphics-api"]
-publish = true
+publish = false
 
 [dependencies]
