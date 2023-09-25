@@ -2,7 +2,13 @@ use crate::vertex::VertexAttr;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct VertexArray {
-  pub handle: usize,
+  handle: usize,
+}
+
+impl VertexArray {
+  pub fn handle(&self) -> usize {
+    self.handle
+  }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
