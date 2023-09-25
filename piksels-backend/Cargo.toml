@@ -13,3 +13,4 @@ categories = ["graphics", "rendering::graphics-api"]
 publish = false
 
 [dependencies]
+bitflags = "2.4.0"

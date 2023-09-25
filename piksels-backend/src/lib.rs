@@ -1,4 +1,4 @@
-use vertex_array::{VertexArray, VertexArrayData};
+use vertex_array::{VertexArray, VertexArrayData, VertexArrayUpdate};
 
 pub mod blending;
 pub mod depth_stencil;
@@ -31,4 +31,11 @@ pub trait Backend {
     instances: &VertexArrayData,
     indices: &[u32],
   ) -> Result<VertexArray, Self::Err>;
+
+  /// Update vertices in a [`VertexArray`].
+  fn update_vertex_array(
+    &mut self,
+    vertex_array: &mut VertexArray,
+    update: VertexArrayUpdate,
+  ) -> Result<(), Self::Err>;
 }

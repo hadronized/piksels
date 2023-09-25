@@ -4,7 +4,7 @@ use piksels_backend::vertex_array::VertexArrayData;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct VertexArray {
-  raw: piksels_backend::vertex_array::VertexArray,
+  pub(crate) raw: piksels_backend::vertex_array::VertexArray,
   vertices: VertexArrayData,
   instances: VertexArrayData,
   indices: Vec<u32>,

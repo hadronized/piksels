@@ -1,3 +1,5 @@
+use bitflags::bitflags;
+
 use crate::vertex::VertexAttr;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -72,4 +74,12 @@ pub enum MemoryLayout {
 
   /// Memory is deinterleaved; i.e. { x0, y0, x1, y1 } { r0, g0, b0, r1, g1, b1 }.
   Deinterleaved { data_per_attr: Vec<Vec<u8>> },
+}
+
+bitflags! {
+  pub struct VertexArrayUpdate: u8 {
+    const VERTICES = 0b00000001;
+    const INSTANCES = 0b00000010;
+    const INDICES = 0b00000100;
+  }
 }
