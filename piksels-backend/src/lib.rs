@@ -1,4 +1,4 @@
-use vertex_array::{VertexArray, VertexArrayInfo};
+use vertex_array::{VertexArray, VertexArrayData};
 
 pub mod blending;
 pub mod depth_stencil;
@@ -12,10 +12,23 @@ pub mod vertex_array;
 pub trait Backend {
   type Err;
 
+  /// Backend author.
+  fn author(&self) -> Result<String, Self::Err>;
+
+  /// Backend name.
+  fn name(&self) -> Result<String, Self::Err>;
+
+  /// Backend version.
+  fn version(&self) -> Result<String, Self::Err>;
+
+  /// Backend shading language version.
+  fn shading_lang_version(&self) -> Result<String, Self::Err>;
+
+  /// Create a new [`VertexArray`].
   fn new_vertex_array(
     &mut self,
-    vertices: VertexArrayInfo,
-    instances: VertexArrayInfo,
-    indices: Vec<u32>,
+    vertices: &VertexArrayData,
+    instances: &VertexArrayData,
+    indices: &[u32],
   ) -> Result<VertexArray, Self::Err>;
 }

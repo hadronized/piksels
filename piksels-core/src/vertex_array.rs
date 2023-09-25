@@ -1,12 +1,12 @@
 use std::ops::{Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive};
 
-use piksels_backend::vertex_array::VertexArrayInfo;
+use piksels_backend::vertex_array::VertexArrayData;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct VertexArray {
   raw: piksels_backend::vertex_array::VertexArray,
-  vertices: VertexArrayInfo,
-  instances: VertexArrayInfo,
+  vertices: VertexArrayData,
+  instances: VertexArrayData,
   indices: Vec<u32>,
   vertex_count: usize,
 }
@@ -17,11 +17,11 @@ impl VertexArray {
     self.vertex_count
   }
 
-  pub fn vertices(&mut self) -> &mut VertexArrayInfo {
+  pub fn vertices(&mut self) -> &mut VertexArrayData {
     &mut self.vertices
   }
 
-  pub fn instances(&mut self) -> &mut VertexArrayInfo {
+  pub fn instances(&mut self) -> &mut VertexArrayData {
     &mut self.instances
   }
 
