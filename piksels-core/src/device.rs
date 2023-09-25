@@ -33,23 +33,9 @@ where
     instances: VertexArrayData,
     indices: Vec<u32>,
   ) -> Result<VertexArray, B::Err> {
-    // FIXME: this is wrong; VertexArrayInfo should have some helper function to compute its length, because it holds
-    // &[u8], on which .len() will give the number of bytes, not the number of vertices
-    let vertex_count = if indices.is_empty() {
-      vertices.len()
-    } else {
-      indices.len()
-    };
-
     self
       .backend
       .new_vertex_array(&vertices, &instances, &indices)
-      .map(|raw| VertexArray {
-        raw,
-        vertices,
-        instances,
-        indices,
-        vertex_count,
-      })
+      .map(|raw| VertexArray::new(raw, vertices, instances, indices))
   }
 }

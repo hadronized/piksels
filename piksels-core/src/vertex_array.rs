@@ -12,9 +12,25 @@ pub struct VertexArray {
 }
 
 impl VertexArray {
-  /// Number of vertices.
-  pub fn vertex_count(&self) -> usize {
-    self.vertex_count
+  pub fn new(
+    raw: piksels_backend::vertex_array::VertexArray,
+    vertices: VertexArrayData,
+    instances: VertexArrayData,
+    indices: Vec<u32>,
+  ) -> Self {
+    let vertex_count = if indices.is_empty() {
+      vertices.len()
+    } else {
+      indices.len()
+    };
+
+    VertexArray {
+      raw,
+      vertices,
+      instances,
+      indices,
+      vertex_count,
+    }
   }
 
   pub fn vertices(&mut self) -> &mut VertexArrayData {
@@ -27,6 +43,10 @@ impl VertexArray {
 
   pub fn indices(&mut self) -> &mut Vec<u32> {
     &mut self.indices
+  }
+
+  pub fn vertex_count(&self) -> usize {
+    self.vertex_count
   }
 }
 
