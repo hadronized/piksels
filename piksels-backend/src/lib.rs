@@ -1,8 +1,24 @@
 use vertex_array::{VertexArray, VertexArrayData, VertexArrayUpdate};
 
+/// A macro to help creating backend types methods.
+///
+/// Such a rule will automatically create some common methods.
+macro_rules! mk_bck_type_getters {
+  ($ty:ty, $($method_name:ident -> $method_ret:ty ),+) => {
+    impl $ty {
+      $(
+        pub fn $method_name(&self) -> $method_ret {
+          self.$method_name
+        }
+      )+
+    }
+  };
+}
+
 pub mod blending;
 pub mod depth_stencil;
 pub mod face_culling;
+pub mod framebuffer;
 pub mod pixel;
 pub mod primitive;
 pub mod scissor;

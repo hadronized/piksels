@@ -2,7 +2,7 @@ use std::ops::{Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive};
 
 use piksels_backend::vertex_array::VertexArrayData;
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct VertexArray {
   pub(crate) raw: piksels_backend::vertex_array::VertexArray,
   vertices: VertexArrayData,
