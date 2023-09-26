@@ -18,7 +18,7 @@ macro_rules! mk_bck_type_getters {
 pub mod blending;
 pub mod depth_stencil;
 pub mod face_culling;
-pub mod framebuffer;
+pub mod render_targets;
 pub mod pixel;
 pub mod primitive;
 pub mod scissor;
