@@ -1,9 +1,10 @@
+use shader::{Shader, ShaderSources};
 use vertex_array::{VertexArray, VertexArrayData, VertexArrayUpdate};
 
 /// A macro to help creating backend types methods.
 ///
 /// Such a rule will automatically create some common methods.
-macro_rules! mk_bck_type_getters {
+macro_rules! mk_bckd_type_getters {
   ($ty:ty, $($method_name:ident -> $method_ret:ty ),+) => {
     impl $ty {
       $(
@@ -18,10 +19,11 @@ macro_rules! mk_bck_type_getters {
 pub mod blending;
 pub mod depth_stencil;
 pub mod face_culling;
-pub mod render_targets;
 pub mod pixel;
 pub mod primitive;
+pub mod render_targets;
 pub mod scissor;
+pub mod shader;
 pub mod vertex;
 pub mod vertex_array;
 
@@ -54,4 +56,9 @@ pub trait Backend {
     vertex_array: &mut VertexArray,
     update: VertexArrayUpdate,
   ) -> Result<(), Self::Err>;
+
+  // TODO: render targets interface
+
+  /// Create a new [`Shader`].
+  fn new_shader(&mut self, sources: &ShaderSources) -> Result<Shader, Self::Err>;
 }

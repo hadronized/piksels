@@ -15,7 +15,7 @@ pub struct ColorAttachment {
   ty: ColorType,
 }
 
-mk_bck_type_getters!(
+mk_bckd_type_getters!(
   ColorAttachment,
   index -> usize,
   name -> &'static str
@@ -29,7 +29,7 @@ pub struct DepthStencilAttachment {
   ty: DepthStencilType,
 }
 
-mk_bck_type_getters!(
+mk_bckd_type_getters!(
   DepthStencilAttachment,
   index -> usize,
   name -> &'static str
