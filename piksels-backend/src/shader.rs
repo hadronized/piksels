@@ -95,4 +95,6 @@ pub enum UniformTypeBase {
   DoubleMat42,
   DoubleMat43,
   DoubleMat44,
+  // TODO: texture types
+  // TODO: shader storage types (like UBO, SSBO, etc.?); -> buffer
 }

@@ -1,4 +1,4 @@
-use shader::{Shader, ShaderSources};
+use shader::{Shader, ShaderSources, Uniform, UniformType};
 use vertex_array::{VertexArray, VertexArrayData, VertexArrayUpdate};
 
 /// A macro to help creating backend types methods.
@@ -61,4 +61,22 @@ pub trait Backend {
 
   /// Create a new [`Shader`].
   fn new_shader(&mut self, sources: &ShaderSources) -> Result<Shader, Self::Err>;
+
+  /// Create a new [`Uniform`].
+  fn new_shader_uniform(
+    &mut self,
+    shader: &Shader,
+    name: &str,
+    ty: UniformType,
+  ) -> Result<Uniform, Self::Err>;
+
+  // TODO: new shader uniform buffer
+
+  /// Set a [`Uniform`].
+  fn set_uniform(
+    &mut self,
+    shader: &Shader,
+    uniform: &Uniform,
+    value: *const u8,
+  ) -> Result<(), Self::Err>;
 }
