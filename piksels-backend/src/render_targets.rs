@@ -1,38 +1,36 @@
-use std::collections::HashSet;
+use std::collections::HashMap;
 
 /// Color and depth/stencil attachments.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RenderTargets {
-  color_attachments: HashSet<ColorAttachment>,
-  depth_stencil_attachments: Option<DepthStencilAttachment>,
+  color_attachments: HashMap<usize, ColorAttachment>,
+  depth_stencil_attachment: Option<(usize, DepthStencilAttachment)>,
 }
 
 /// A color image attachment.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct ColorAttachment {
-  index: usize,
   name: &'static str,
   ty: ColorType,
 }
 
 mk_bckd_type_getters!(
   ColorAttachment,
-  index -> usize,
-  name -> &'static str
+  name -> &'static str,
+  ty -> ColorType
 );
 
 /// A depth-stencil attachment.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct DepthStencilAttachment {
-  index: usize,
   name: &'static str,
   ty: DepthStencilType,
 }
 
 mk_bckd_type_getters!(
   DepthStencilAttachment,
-  index -> usize,
-  name -> &'static str
+  name -> &'static str,
+  ty -> DepthStencilType
 );
 
 /// Color attachment type.

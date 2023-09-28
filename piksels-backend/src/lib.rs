@@ -1,4 +1,7 @@
-use shader::{Shader, ShaderSources, Uniform, UniformType};
+use std::collections::HashSet;
+
+use render_targets::{ColorAttachment, DepthStencilAttachment, RenderTargets};
+use shader::{Shader, ShaderSources, Uniform, UniformBuffer, UniformType};
 use vertex_array::{VertexArray, VertexArrayData, VertexArrayUpdate};
 
 /// A macro to help creating backend types methods.
@@ -57,7 +60,11 @@ pub trait Backend {
     update: VertexArrayUpdate,
   ) -> Result<(), Self::Err>;
 
-  // TODO: render targets interface
+  fn new_render_targets(
+    &mut self,
+    color_attachments: HashSet<ColorAttachment>,
+    depth_stencil_attachment: Option<DepthStencilAttachment>,
+  ) -> Result<RenderTargets, Self::Err>;
 
   /// Create a new [`Shader`].
   fn new_shader(&mut self, sources: &ShaderSources) -> Result<Shader, Self::Err>;
@@ -70,7 +77,11 @@ pub trait Backend {
     ty: UniformType,
   ) -> Result<Uniform, Self::Err>;
 
-  // TODO: new shader uniform buffer
+  fn new_shader_uniform_buffer(
+    &mut self,
+    shader: &Shader,
+    name: &str,
+  ) -> Result<UniformBuffer, Self::Err>;
 
   /// Set a [`Uniform`].
   fn set_uniform(

@@ -98,3 +98,10 @@ pub enum UniformTypeBase {
   // TODO: texture types
   // TODO: shader storage types (like UBO, SSBO, etc.?); -> buffer
 }
+
+#[derive(Debug, Eq, PartialEq)]
+pub struct UniformBuffer {
+  handle: usize,
+}
+
+mk_bckd_type_getters!(UniformBuffer, handle -> usize);
