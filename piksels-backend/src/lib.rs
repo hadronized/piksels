@@ -24,8 +24,10 @@ macro_rules! mk_bckd_type_getters {
 }
 
 pub mod blending;
+pub mod color;
 pub mod depth_stencil;
 pub mod face_culling;
+pub mod pipeline;
 pub mod pixel;
 pub mod primitive;
 pub mod render_targets;
@@ -34,6 +36,7 @@ pub mod shader;
 pub mod texture;
 pub mod vertex;
 pub mod vertex_array;
+pub mod viewport;
 
 pub trait Backend {
   type Err;
