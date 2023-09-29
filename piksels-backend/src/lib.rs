@@ -1,5 +1,7 @@
 use std::collections::HashSet;
 
+use texture::Texture;
+
 use crate::{
   render_targets::{ColorAttachment, DepthStencilAttachment, RenderTargets},
   shader::{Shader, ShaderSources, Uniform, UniformBuffer, UniformType},
@@ -29,6 +31,7 @@ pub mod primitive;
 pub mod render_targets;
 pub mod scissor;
 pub mod shader;
+pub mod texture;
 pub mod vertex;
 pub mod vertex_array;
 pub trait Backend {
@@ -91,4 +94,6 @@ pub trait Backend {
     uniform: &Uniform,
     value: *const u8,
   ) -> Result<(), Self::Err>;
+
+  fn new_texture(&mut self, storage: texture::Storage) -> Result<Texture, Self::Err>;
 }
