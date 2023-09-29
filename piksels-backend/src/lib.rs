@@ -34,6 +34,7 @@ pub mod shader;
 pub mod texture;
 pub mod vertex;
 pub mod vertex_array;
+
 pub trait Backend {
   type Err;
 
@@ -74,18 +75,16 @@ pub trait Backend {
   fn new_shader(&mut self, sources: &ShaderSources) -> Result<Shader, Self::Err>;
 
   /// Create a new [`Uniform`].
-  fn new_shader_uniform(
+  fn new_uniform(
     &mut self,
     shader: &Shader,
     name: &str,
     ty: UniformType,
   ) -> Result<Uniform, Self::Err>;
 
-  fn new_shader_uniform_buffer(
-    &mut self,
-    shader: &Shader,
-    name: &str,
-  ) -> Result<UniformBuffer, Self::Err>;
+  /// Create a new [`UniformBuffer`].
+  fn new_uniform_buffer(&mut self, shader: &Shader, name: &str)
+    -> Result<UniformBuffer, Self::Err>;
 
   /// Set a [`Uniform`].
   fn set_uniform(
