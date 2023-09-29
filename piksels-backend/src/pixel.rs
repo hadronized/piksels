@@ -20,13 +20,13 @@ impl Pixel {
   pub fn channels_len(self) -> usize {
     match self.format {
       Format::R(_) => 1,
-      Format::RG(_, _) => 2,
-      Format::RGB(_, _, _) => 3,
-      Format::RGBA(_, _, _, _) => 4,
-      Format::SRGB(_, _, _) => 3,
-      Format::SRGBA(_, _, _, _) => 4,
+      Format::RG(..) => 2,
+      Format::RGB(..) => 3,
+      Format::RGBA(..) => 4,
+      Format::SRGB(..) => 3,
+      Format::SRGBA(..) => 4,
       Format::Depth(_) => 1,
-      Format::DepthStencil(_, _) => 2,
+      Format::DepthStencil(..) => 2,
     }
   }
 }

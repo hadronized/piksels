@@ -1,8 +1,10 @@
 use std::collections::HashSet;
 
-use render_targets::{ColorAttachment, DepthStencilAttachment, RenderTargets};
-use shader::{Shader, ShaderSources, Uniform, UniformBuffer, UniformType};
-use vertex_array::{VertexArray, VertexArrayData, VertexArrayUpdate};
+use crate::{
+  render_targets::{ColorAttachment, DepthStencilAttachment, RenderTargets},
+  shader::{Shader, ShaderSources, Uniform, UniformBuffer, UniformType},
+  vertex_array::{VertexArray, VertexArrayData, VertexArrayUpdate},
+};
 
 /// A macro to help creating backend types methods.
 ///
@@ -29,7 +31,6 @@ pub mod scissor;
 pub mod shader;
 pub mod vertex;
 pub mod vertex_array;
-
 pub trait Backend {
   type Err;
 
