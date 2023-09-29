@@ -31,7 +31,7 @@ where
   }
 
   pub fn new_vertex_array(
-    &mut self,
+    &self,
     vertices: VertexArrayData,
     instances: VertexArrayData,
     indices: Vec<u32>,
@@ -43,12 +43,10 @@ where
   }
 
   pub fn update_vertex_array(
-    &mut self,
-    vertex_array: &mut VertexArray,
+    &self,
+    vertex_array: &VertexArray,
     update: VertexArrayUpdate,
   ) -> Result<(), B::Err> {
-    self
-      .backend
-      .update_vertex_array(&mut vertex_array.raw, update)
+    self.backend.update_vertex_array(&vertex_array.raw, update)
   }
 }

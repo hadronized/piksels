@@ -52,7 +52,7 @@ pub trait Backend {
 
   /// Create a new [`VertexArray`].
   fn new_vertex_array(
-    &mut self,
+    &self,
     vertices: &VertexArrayData,
     instances: &VertexArrayData,
     indices: &[u32],
@@ -60,50 +60,45 @@ pub trait Backend {
 
   /// Update vertices in a [`VertexArray`].
   fn update_vertex_array(
-    &mut self,
-    vertex_array: &mut VertexArray,
+    &self,
+    vertex_array: &VertexArray,
     update: VertexArrayUpdate,
   ) -> Result<(), Self::Err>;
 
   fn new_render_targets(
-    &mut self,
+    &self,
     color_attachments: HashSet<ColorAttachment>,
     depth_stencil_attachment: Option<DepthStencilAttachment>,
   ) -> Result<RenderTargets, Self::Err>;
 
   /// Create a new [`Shader`].
-  fn new_shader(&mut self, sources: &ShaderSources) -> Result<Shader, Self::Err>;
+  fn new_shader(&self, sources: &ShaderSources) -> Result<Shader, Self::Err>;
 
   /// Create a new [`Uniform`].
-  fn new_uniform(
-    &mut self,
-    shader: &Shader,
-    name: &str,
-    ty: UniformType,
-  ) -> Result<Uniform, Self::Err>;
+  fn new_uniform(&self, shader: &Shader, name: &str, ty: UniformType)
+    -> Result<Uniform, Self::Err>;
 
   /// Create a new [`UniformBuffer`].
-  fn new_uniform_buffer(&mut self, shader: &Shader, name: &str)
-    -> Result<UniformBuffer, Self::Err>;
+  fn new_uniform_buffer(&self, shader: &Shader, name: &str) -> Result<UniformBuffer, Self::Err>;
 
   /// Set a [`Uniform`].
   fn set_uniform(
-    &mut self,
+    &self,
     shader: &Shader,
     uniform: &Uniform,
     value: *const u8,
   ) -> Result<(), Self::Err>;
 
   fn new_texture(
-    &mut self,
+    &self,
     storage: texture::Storage,
     sampling: TextureSampling,
   ) -> Result<Texture, Self::Err>;
 
-  fn resize_texture(&mut self, texture: &Texture, storage: texture::Size) -> Result<(), Self::Err>;
+  fn resize_texture(&self, texture: &Texture, storage: texture::Size) -> Result<(), Self::Err>;
 
   fn set_texels(
-    &mut self,
+    &self,
     texture: &Texture,
     rect: texture::Rect,
     mipmaps: bool,
@@ -112,7 +107,7 @@ pub trait Backend {
   ) -> Result<(), Self::Err>;
 
   fn clear_texels(
-    &mut self,
+    &self,
     texture: &Texture,
     rect: texture::Rect,
     mipmaps: bool,
