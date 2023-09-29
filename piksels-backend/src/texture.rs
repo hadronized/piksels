@@ -160,6 +160,34 @@ pub enum CubeFace {
   NegZ,
 }
 
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum Size {
+  Dim1 { width: u32 },
+
+  Dim2 { width: u32, height: u32 },
+
+  Dim3 { width: u32, height: u32, depth: u32 },
+
+  Cubemap { size: u32 },
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum Offset {
+  Dim1 { x: u32 },
+
+  Dim2 { x: u32, y: u32 },
+
+  Dim3 { x: u32, y: u32, z: u32 },
+
+  Cubemap { x: u32, y: u32, face: CubeFace },
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct Rect {
+  offset: Offset,
+  size: Size,
+}
+
 #[derive(Debug, Eq, PartialEq)]
 pub struct Texture {
   handle: usize,

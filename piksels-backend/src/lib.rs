@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use texture::Texture;
+use texture::{Texture, TextureSampling};
 
 use crate::{
   render_targets::{ColorAttachment, DepthStencilAttachment, RenderTargets},
@@ -95,5 +95,28 @@ pub trait Backend {
     value: *const u8,
   ) -> Result<(), Self::Err>;
 
-  fn new_texture(&mut self, storage: texture::Storage) -> Result<Texture, Self::Err>;
+  fn new_texture(
+    &mut self,
+    storage: texture::Storage,
+    sampling: TextureSampling,
+  ) -> Result<Texture, Self::Err>;
+
+  fn resize_texture(&mut self, texture: &Texture, storage: texture::Size) -> Result<(), Self::Err>;
+
+  fn set_texels(
+    &mut self,
+    texture: &Texture,
+    rect: texture::Rect,
+    mipmaps: bool,
+    level: usize,
+    texels: *const u8,
+  ) -> Result<(), Self::Err>;
+
+  fn clear_texels(
+    &mut self,
+    texture: &Texture,
+    rect: texture::Rect,
+    mipmaps: bool,
+    clear_value: *const u8,
+  ) -> Result<(), Self::Err>;
 }
