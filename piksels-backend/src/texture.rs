@@ -62,7 +62,7 @@ pub enum MagFilter {
 
 /// A [`Sampler`] object gives hint on how a [`Texture`] should be sampled.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub struct TextureSampling {
+pub struct Sampling {
   /// How should we wrap around the _r_ sampling coordinate?
   pub wrap_r: Wrap,
 
@@ -187,10 +187,3 @@ pub struct Rect {
   offset: Offset,
   size: Size,
 }
-
-#[derive(Debug, Eq, PartialEq)]
-pub struct Texture {
-  handle: usize,
-}
-
-mk_bckd_type_getters!(Texture, handle -> usize);

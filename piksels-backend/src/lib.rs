@@ -7,7 +7,7 @@ use face_culling::FaceCulling;
 use pipeline::CmdBuf;
 use render_targets::{ColorAttachmentPoint, DepthStencilAttachmentPoint};
 use scissor::Scissor;
-use texture::{Storage, Texture, TextureSampling};
+use texture::{Sampling, Storage};
 use viewport::Viewport;
 
 use crate::{
@@ -55,6 +55,7 @@ pub trait Backend {
   type Shader;
   type Uniform;
   type UniformBuffer;
+  type Texture;
 
   /// Backend author.
   fn author(&self) -> Result<String, Self::Err>;
@@ -135,18 +136,14 @@ pub trait Backend {
   /// Set a [`Uniform`].
   fn set_uniform(uniform: &Self::Uniform, value: *const u8) -> Result<(), Self::Err>;
 
-  fn new_texture(
-    &self,
-    storage: texture::Storage,
-    sampling: TextureSampling,
-  ) -> Result<Texture, Self::Err>;
+  fn new_texture(&self, storage: Storage, sampling: Sampling) -> Result<Self::Texture, Self::Err>;
 
-  fn drop_texture(texture: &Texture);
+  fn drop_texture(texture: &Self::Texture);
 
-  fn resize_texture(texture: &Texture, storage: texture::Size) -> Result<(), Self::Err>;
+  fn resize_texture(texture: &Self::Texture, size: texture::Size) -> Result<(), Self::Err>;
 
   fn set_texels(
-    texture: &Texture,
+    texture: &Self::Texture,
     rect: texture::Rect,
     mipmaps: bool,
     level: usize,
@@ -154,10 +151,10 @@ pub trait Backend {
   ) -> Result<(), Self::Err>;
 
   fn clear_texels(
-    texture: &Texture,
+    texture: &Self::Texture,
     rect: texture::Rect,
     mipmaps: bool,
-    clear_value: *const u8,
+    value: *const u8,
   ) -> Result<(), Self::Err>;
 
   fn new_cmd_buf(&self) -> Result<CmdBuf, Self::Err>;
