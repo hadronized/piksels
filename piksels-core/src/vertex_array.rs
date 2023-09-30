@@ -42,7 +42,7 @@ where
       indices.len()
     };
 
-    VertexArray {
+    Self {
       raw,
       vertices,
       instances,
