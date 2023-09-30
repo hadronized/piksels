@@ -5,12 +5,12 @@ use color::RGBA;
 use depth_stencil::{DepthTest, DepthWrite, StencilTest};
 use face_culling::FaceCulling;
 use pipeline::CmdBuf;
+use render_targets::{ColorAttachmentPoint, DepthStencilAttachmentPoint};
 use scissor::Scissor;
-use texture::{Texture, TextureSampling};
+use texture::{Storage, Texture, TextureSampling};
 use viewport::Viewport;
 
 use crate::{
-  render_targets::{ColorAttachment, DepthStencilAttachment, RenderTargets},
   shader::{Shader, ShaderSources, Uniform, UniformBuffer, UniformType},
   vertex_array::{VertexArrayData, VertexArrayUpdate},
 };
@@ -49,6 +49,9 @@ pub trait Backend {
   type Err;
 
   type VertexArray;
+  type RenderTargets;
+  type ColorAttachment;
+  type DepthStencilAttachment;
 
   /// Backend author.
   fn author(&self) -> Result<String, Self::Err>;
@@ -81,12 +84,25 @@ pub trait Backend {
 
   fn new_render_targets(
     &self,
-    color_attachments: HashSet<ColorAttachment>,
-    depth_stencil_attachment: Option<DepthStencilAttachment>,
-  ) -> Result<RenderTargets, Self::Err>;
+    color_attachment_points: HashSet<ColorAttachmentPoint>,
+    depth_stencil_attachment_point: Option<DepthStencilAttachmentPoint>,
+    storage: Storage,
+  ) -> Result<Self::RenderTargets, Self::Err>;
 
   /// Drop a [`RenderTargets`].
-  fn drop_render_targets(render_targets: &RenderTargets);
+  fn drop_render_targets(render_targets: &Self::RenderTargets);
+
+  /// Obtain the indexed color attachment.
+  fn get_color_attachment(
+    render_targets: &Self::RenderTargets,
+    index: usize,
+  ) -> Result<Self::ColorAttachment, Self::Err>;
+
+  /// Obtain the indexed depth/stencil attachment.
+  fn get_depth_stencil_attachment(
+    render_targets: &Self::RenderTargets,
+    index: usize,
+  ) -> Result<Self::DepthStencilAttachment, Self::Err>;
 
   /// Create a new [`Shader`].
   fn new_shader(&self, sources: &ShaderSources) -> Result<Shader, Self::Err>;
@@ -160,7 +176,7 @@ pub trait Backend {
 
   fn cmd_buf_bind_render_targets(
     cmd_buf: &CmdBuf,
-    render_targets: &RenderTargets,
+    render_targets: &Self::RenderTargets,
   ) -> Result<(), Self::Err>;
 
   fn cmd_buf_bind_shader(cmd_buf: &CmdBuf, shader: &Shader) -> Result<(), Self::Err>;

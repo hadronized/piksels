@@ -1,6 +1,13 @@
-use piksels_backend::{vertex_array::VertexArrayData, Backend};
+use std::collections::HashSet;
 
-use crate::vertex_array::VertexArray;
+use piksels_backend::{
+  render_targets::{ColorAttachmentPoint, DepthStencilAttachmentPoint},
+  texture::Storage,
+  vertex_array::VertexArrayData,
+  Backend,
+};
+
+use crate::{render_targets::RenderTargets, vertex_array::VertexArray};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Device<B> {
@@ -36,6 +43,22 @@ where
     self
       .backend
       .new_vertex_array(&vertices, &instances, &indices)
-      .map(|raw| VertexArray::new(raw, vertices, instances, indices))
+      .map(|raw| VertexArray::from_raw(raw, vertices, instances, indices))
+  }
+
+  pub fn new_render_targets(
+    &self,
+    color_attachment_points: HashSet<ColorAttachmentPoint>,
+    depth_stencil_attachment_point: Option<DepthStencilAttachmentPoint>,
+    storage: Storage,
+  ) -> Result<RenderTargets<B>, B::Err> {
+    self
+      .backend
+      .new_render_targets(
+        color_attachment_points,
+        depth_stencil_attachment_point,
+        storage,
+      )
+      .map(RenderTargets::from_raw)
   }
 }

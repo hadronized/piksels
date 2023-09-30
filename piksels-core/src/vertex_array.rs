@@ -30,7 +30,7 @@ impl<B> VertexArray<B>
 where
   B: Backend,
 {
-  pub(crate) fn new(
+  pub(crate) fn from_raw(
     raw: B::VertexArray,
     vertices: VertexArrayData,
     instances: VertexArrayData,
