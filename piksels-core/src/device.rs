@@ -5,7 +5,7 @@ use piksels_backend::{
   shader::ShaderSources,
   texture::{Sampling, Storage},
   vertex_array::VertexArrayData,
-  Backend,
+  Backend, BackendInfo,
 };
 
 use crate::{
@@ -22,20 +22,24 @@ impl<B> Device<B>
 where
   B: Backend,
 {
-  pub fn backend_author(&self) -> Result<String, B::Err> {
+  pub fn author(&self) -> Result<String, B::Err> {
     self.backend.author()
   }
 
-  pub fn backend_name(&self) -> Result<String, B::Err> {
+  pub fn name(&self) -> Result<String, B::Err> {
     self.backend.name()
   }
 
-  pub fn backend_version(&self) -> Result<String, B::Err> {
+  pub fn version(&self) -> Result<String, B::Err> {
     self.backend.version()
   }
 
-  pub fn backend_shading_lang_version(&self) -> Result<String, B::Err> {
+  pub fn shading_lang_version(&self) -> Result<String, B::Err> {
     self.backend.shading_lang_version()
+  }
+
+  pub fn info(&self) -> Result<BackendInfo, B::Err> {
+    self.backend.info()
   }
 
   pub fn new_vertex_array(

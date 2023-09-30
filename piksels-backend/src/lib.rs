@@ -43,6 +43,12 @@ pub mod vertex;
 pub mod vertex_array;
 pub mod viewport;
 
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub struct BackendInfo {
+  pub version: &'static str,
+  pub git_commit_hash: &'static str,
+}
+
 pub trait Backend {
   type Err;
 
@@ -67,6 +73,9 @@ pub trait Backend {
 
   /// Backend shading language version.
   fn shading_lang_version(&self) -> Result<String, Self::Err>;
+
+  /// More information about the backend (git hash, etc.).
+  fn info(&self) -> Result<BackendInfo, Self::Err>;
 
   /// Create a new [`VertexArray`].
   fn new_vertex_array(
