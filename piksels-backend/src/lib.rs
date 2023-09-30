@@ -68,6 +68,9 @@ pub trait Backend {
     indices: &[u32],
   ) -> Result<VertexArray, Self::Err>;
 
+  /// Drop a [`VertexArray`].
+  fn drop_vertex_array(vertex_array: &VertexArray);
+
   /// Update vertices in a [`VertexArray`].
   fn update_vertex_array(
     &self,
@@ -81,15 +84,27 @@ pub trait Backend {
     depth_stencil_attachment: Option<DepthStencilAttachment>,
   ) -> Result<RenderTargets, Self::Err>;
 
+  /// Drop a [`RenderTargets`].
+  fn drop_render_targets(render_targets: &RenderTargets);
+
   /// Create a new [`Shader`].
   fn new_shader(&self, sources: &ShaderSources) -> Result<Shader, Self::Err>;
+
+  /// Drop a [`Shader`].
+  fn drop_shader(shader: &Shader);
 
   /// Create a new [`Uniform`].
   fn new_uniform(&self, shader: &Shader, name: &str, ty: UniformType)
     -> Result<Uniform, Self::Err>;
 
+  /// Drop a [`Uniform`].
+  fn drop_uniform(uniform: &Uniform);
+
   /// Create a new [`UniformBuffer`].
   fn new_uniform_buffer(&self, shader: &Shader, name: &str) -> Result<UniformBuffer, Self::Err>;
+
+  /// Drop a [`UniformBuffer`].
+  fn drop_uniform_buffer(uniform_buffer: &UniformBuffer);
 
   /// Set a [`Uniform`].
   fn set_uniform(
@@ -104,6 +119,8 @@ pub trait Backend {
     storage: texture::Storage,
     sampling: TextureSampling,
   ) -> Result<Texture, Self::Err>;
+
+  fn drop_texture(texture: &Texture);
 
   fn resize_texture(&self, texture: &Texture, storage: texture::Size) -> Result<(), Self::Err>;
 
@@ -125,6 +142,8 @@ pub trait Backend {
   ) -> Result<(), Self::Err>;
 
   fn new_cmd_buf(&self) -> Result<CmdBuf, Self::Err>;
+
+  fn drop_cmd_buf(cmd_buf: &CmdBuf);
 
   fn cmd_buf_blending(cmd_buf: &CmdBuf, blending: BlendingMode) -> Result<(), Self::Err>;
 
