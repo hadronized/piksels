@@ -12,7 +12,7 @@ use viewport::Viewport;
 use crate::{
   render_targets::{ColorAttachment, DepthStencilAttachment, RenderTargets},
   shader::{Shader, ShaderSources, Uniform, UniformBuffer, UniformType},
-  vertex_array::{VertexArray, VertexArrayData, VertexArrayUpdate},
+  vertex_array::{VertexArrayData, VertexArrayUpdate},
 };
 
 /// A macro to help creating backend types methods.
@@ -48,6 +48,8 @@ pub mod viewport;
 pub trait Backend {
   type Err;
 
+  type VertexArray;
+
   /// Backend author.
   fn author(&self) -> Result<String, Self::Err>;
 
@@ -66,15 +68,14 @@ pub trait Backend {
     vertices: &VertexArrayData,
     instances: &VertexArrayData,
     indices: &[u32],
-  ) -> Result<VertexArray, Self::Err>;
+  ) -> Result<Self::VertexArray, Self::Err>;
 
   /// Drop a [`VertexArray`].
-  fn drop_vertex_array(vertex_array: &VertexArray);
+  fn drop_vertex_array(vertex_array: &Self::VertexArray);
 
   /// Update vertices in a [`VertexArray`].
   fn update_vertex_array(
-    &self,
-    vertex_array: &VertexArray,
+    vertex_array: &Self::VertexArray,
     update: VertexArrayUpdate,
   ) -> Result<(), Self::Err>;
 
@@ -94,25 +95,19 @@ pub trait Backend {
   fn drop_shader(shader: &Shader);
 
   /// Create a new [`Uniform`].
-  fn new_uniform(&self, shader: &Shader, name: &str, ty: UniformType)
-    -> Result<Uniform, Self::Err>;
+  fn new_uniform(shader: &Shader, name: &str, ty: UniformType) -> Result<Uniform, Self::Err>;
 
   /// Drop a [`Uniform`].
   fn drop_uniform(uniform: &Uniform);
 
   /// Create a new [`UniformBuffer`].
-  fn new_uniform_buffer(&self, shader: &Shader, name: &str) -> Result<UniformBuffer, Self::Err>;
+  fn new_uniform_buffer(shader: &Shader, name: &str) -> Result<UniformBuffer, Self::Err>;
 
   /// Drop a [`UniformBuffer`].
   fn drop_uniform_buffer(uniform_buffer: &UniformBuffer);
 
   /// Set a [`Uniform`].
-  fn set_uniform(
-    &self,
-    shader: &Shader,
-    uniform: &Uniform,
-    value: *const u8,
-  ) -> Result<(), Self::Err>;
+  fn set_uniform(shader: &Shader, uniform: &Uniform, value: *const u8) -> Result<(), Self::Err>;
 
   fn new_texture(
     &self,
@@ -122,10 +117,9 @@ pub trait Backend {
 
   fn drop_texture(texture: &Texture);
 
-  fn resize_texture(&self, texture: &Texture, storage: texture::Size) -> Result<(), Self::Err>;
+  fn resize_texture(texture: &Texture, storage: texture::Size) -> Result<(), Self::Err>;
 
   fn set_texels(
-    &self,
     texture: &Texture,
     rect: texture::Rect,
     mipmaps: bool,
@@ -134,7 +128,6 @@ pub trait Backend {
   ) -> Result<(), Self::Err>;
 
   fn clear_texels(
-    &self,
     texture: &Texture,
     rect: texture::Rect,
     mipmaps: bool,
@@ -174,6 +167,6 @@ pub trait Backend {
 
   fn cmd_buf_draw_vertex_array(
     cmd_buf: &CmdBuf,
-    vertex_array: &VertexArray,
+    vertex_array: &Self::VertexArray,
   ) -> Result<(), Self::Err>;
 }

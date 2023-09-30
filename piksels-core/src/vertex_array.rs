@@ -1,19 +1,28 @@
 use std::ops::{Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive};
 
-use piksels_backend::vertex_array::VertexArrayData;
+use piksels_backend::{
+  vertex_array::{VertexArrayData, VertexArrayUpdate},
+  Backend,
+};
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct VertexArray {
-  pub(crate) raw: piksels_backend::vertex_array::VertexArray,
+pub struct VertexArray<B>
+where
+  B: Backend,
+{
+  pub(crate) raw: B::VertexArray,
   vertices: VertexArrayData,
   instances: VertexArrayData,
   indices: Vec<u32>,
   vertex_count: usize,
 }
 
-impl VertexArray {
-  pub fn new(
-    raw: piksels_backend::vertex_array::VertexArray,
+impl<B> VertexArray<B>
+where
+  B: Backend,
+{
+  pub(crate) fn new(
+    raw: B::VertexArray,
     vertices: VertexArrayData,
     instances: VertexArrayData,
     indices: Vec<u32>,
@@ -48,31 +57,29 @@ impl VertexArray {
   pub fn vertex_count(&self) -> usize {
     self.vertex_count
   }
+
+  pub fn update(&self, update: VertexArrayUpdate) -> Result<(), B::Err> {
+    B::update_vertex_array(&self.raw, update)
+  }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct VertexArrayView {
-  handle: usize,
+pub struct VertexArrayView<'a, B>
+where
+  B: Backend,
+{
+  vertex_array: &'a B::VertexArray,
   start_vertex: usize,
   vertex_count: usize,
   instance_count: usize,
 }
 
-impl VertexArrayView {
-  pub fn new(va: &VertexArray) -> Self {
-    let handle = va.raw.handle();
-    let vertex_count = va.vertex_count;
-
-    Self {
-      handle,
-      start_vertex: 0,
-      vertex_count,
-      instance_count: 1,
-    }
-  }
-
-  pub fn handle(&self) -> usize {
-    self.handle
+impl<'a, B> VertexArrayView<'a, B>
+where
+  B: Backend,
+{
+  pub fn vertex_array(&self) -> &'a B::VertexArray {
+    self.vertex_array
   }
 
   pub fn start_vertex(&self) -> usize {
@@ -103,20 +110,35 @@ impl VertexArrayView {
   }
 }
 
-pub trait View<R> {
-  fn view(&self, range: R) -> VertexArrayView;
+/// A helper trait to obtain a [`VertexArrayView`] from a [`VertexArray`].
+pub trait View<B, R>
+where
+  B: Backend,
+{
+  fn view(&self, range: R) -> VertexArrayView<B>;
 }
 
-impl View<RangeFull> for VertexArray {
-  fn view(&self, _: RangeFull) -> VertexArrayView {
-    VertexArrayView::new(self)
+impl<B> View<B, RangeFull> for VertexArray<B>
+where
+  B: Backend,
+{
+  fn view(&self, _: RangeFull) -> VertexArrayView<B> {
+    VertexArrayView {
+      vertex_array: &self.raw,
+      start_vertex: 0,
+      vertex_count: self.vertex_count,
+      instance_count: 1,
+    }
   }
 }
 
-impl View<Range<usize>> for VertexArray {
-  fn view(&self, range: Range<usize>) -> VertexArrayView {
+impl<B> View<B, Range<usize>> for VertexArray<B>
+where
+  B: Backend,
+{
+  fn view(&self, range: Range<usize>) -> VertexArrayView<B> {
     VertexArrayView {
-      handle: self.raw.handle(),
+      vertex_array: &self.raw,
       start_vertex: range.start,
       vertex_count: range.end,
       instance_count: 1,
@@ -124,10 +146,13 @@ impl View<Range<usize>> for VertexArray {
   }
 }
 
-impl View<RangeFrom<usize>> for VertexArray {
-  fn view(&self, range: RangeFrom<usize>) -> VertexArrayView {
+impl<B> View<B, RangeFrom<usize>> for VertexArray<B>
+where
+  B: Backend,
+{
+  fn view(&self, range: RangeFrom<usize>) -> VertexArrayView<B> {
     VertexArrayView {
-      handle: self.raw.handle(),
+      vertex_array: &self.raw,
       start_vertex: range.start,
       vertex_count: self.vertex_count - range.start,
       instance_count: 1,
@@ -135,10 +160,13 @@ impl View<RangeFrom<usize>> for VertexArray {
   }
 }
 
-impl View<RangeTo<usize>> for VertexArray {
-  fn view(&self, range: RangeTo<usize>) -> VertexArrayView {
+impl<B> View<B, RangeTo<usize>> for VertexArray<B>
+where
+  B: Backend,
+{
+  fn view(&self, range: RangeTo<usize>) -> VertexArrayView<B> {
     VertexArrayView {
-      handle: self.raw.handle(),
+      vertex_array: &self.raw,
       start_vertex: 0,
       vertex_count: range.end - 1,
       instance_count: 1,
@@ -146,10 +174,13 @@ impl View<RangeTo<usize>> for VertexArray {
   }
 }
 
-impl View<RangeToInclusive<usize>> for VertexArray {
-  fn view(&self, range: RangeToInclusive<usize>) -> VertexArrayView {
+impl<B> View<B, RangeToInclusive<usize>> for VertexArray<B>
+where
+  B: Backend,
+{
+  fn view(&self, range: RangeToInclusive<usize>) -> VertexArrayView<B> {
     VertexArrayView {
-      handle: self.raw.handle(),
+      vertex_array: &self.raw,
       start_vertex: 0,
       vertex_count: range.end,
       instance_count: 1,

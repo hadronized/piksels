@@ -1,7 +1,4 @@
-use piksels_backend::{
-  vertex_array::{VertexArrayData, VertexArrayUpdate},
-  Backend,
-};
+use piksels_backend::{vertex_array::VertexArrayData, Backend};
 
 use crate::vertex_array::VertexArray;
 
@@ -35,18 +32,10 @@ where
     vertices: VertexArrayData,
     instances: VertexArrayData,
     indices: Vec<u32>,
-  ) -> Result<VertexArray, B::Err> {
+  ) -> Result<VertexArray<B>, B::Err> {
     self
       .backend
       .new_vertex_array(&vertices, &instances, &indices)
       .map(|raw| VertexArray::new(raw, vertices, instances, indices))
-  }
-
-  pub fn update_vertex_array(
-    &self,
-    vertex_array: &VertexArray,
-    update: VertexArrayUpdate,
-  ) -> Result<(), B::Err> {
-    self.backend.update_vertex_array(&vertex_array.raw, update)
   }
 }
