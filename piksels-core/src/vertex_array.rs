@@ -17,6 +17,15 @@ where
   vertex_count: usize,
 }
 
+impl<B> Drop for VertexArray<B>
+where
+  B: Backend,
+{
+  fn drop(&mut self) {
+    B::drop_vertex_array(&self.raw);
+  }
+}
+
 impl<B> VertexArray<B>
 where
   B: Backend,
