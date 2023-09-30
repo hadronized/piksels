@@ -201,4 +201,6 @@ pub trait Backend {
     cmd_buf: &Self::CmdBuf,
     vertex_array: &Self::VertexArray,
   ) -> Result<(), Self::Err>;
+
+  fn cmd_buf_finish(cmd_buf: &Self::CmdBuf) -> Result<(), Self::Err>;
 }

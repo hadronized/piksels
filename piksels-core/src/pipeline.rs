@@ -51,42 +51,43 @@ where
     B::cmd_buf_stencil_test(&self.raw, stencil_test)
   }
 
-  pub fn cmd_buf_face_culling(&self, face_culling: FaceCulling) -> Result<(), B::Err> {
+  pub fn face_culling(&self, face_culling: FaceCulling) -> Result<(), B::Err> {
     B::cmd_buf_face_culling(&self.raw, face_culling)
   }
 
-  pub fn cmd_buf_viewport(&self, viewport: Viewport) -> Result<(), B::Err> {
+  pub fn viewport(&self, viewport: Viewport) -> Result<(), B::Err> {
     B::cmd_buf_viewport(&self.raw, viewport)
   }
 
-  pub fn cmd_buf_scissor(&self, scissor: Scissor) -> Result<(), B::Err> {
+  pub fn scissor(&self, scissor: Scissor) -> Result<(), B::Err> {
     B::cmd_buf_scissor(&self.raw, scissor)
   }
 
-  pub fn cmd_buf_clear_color(&self, clear_color: Option<RGBA>) -> Result<(), B::Err> {
+  pub fn clear_color(&self, clear_color: Option<RGBA>) -> Result<(), B::Err> {
     B::cmd_buf_clear_color(&self.raw, clear_color)
   }
 
-  pub fn cmd_buf_clear_depth(&self, clear_depth: Option<f32>) -> Result<(), B::Err> {
+  pub fn clear_depth(&self, clear_depth: Option<f32>) -> Result<(), B::Err> {
     B::cmd_buf_clear_depth(&self.raw, clear_depth)
   }
 
-  pub fn cmd_buf_srgb(&self, srgb: bool) -> Result<(), B::Err> {
+  pub fn srgb(&self, srgb: bool) -> Result<(), B::Err> {
     B::cmd_buf_srgb(&self.raw, srgb)
   }
 
-  pub fn cmd_buf_bind_render_targets(
-    &self,
-    render_targets: &RenderTargets<B>,
-  ) -> Result<(), B::Err> {
+  pub fn bind_render_targets(&self, render_targets: &RenderTargets<B>) -> Result<(), B::Err> {
     B::cmd_buf_bind_render_targets(&self.raw, &render_targets.raw)
   }
 
-  pub fn cmd_buf_bind_shader(&self, shader: &Shader<B>) -> Result<(), B::Err> {
+  pub fn bind_shader(&self, shader: &Shader<B>) -> Result<(), B::Err> {
     B::cmd_buf_bind_shader(&self.raw, &shader.raw)
   }
 
   pub fn cmd_buf_draw_vertex_array(&self, vertex_array: &VertexArray<B>) -> Result<(), B::Err> {
     B::cmd_buf_draw_vertex_array(&self.raw, &vertex_array.raw)
+  }
+
+  pub fn finish(&self) -> Result<(), B::Err> {
+    B::cmd_buf_finish(&self.raw)
   }
 }
