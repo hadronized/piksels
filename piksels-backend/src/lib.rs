@@ -116,6 +116,15 @@ pub trait Backend {
     index: usize,
   ) -> Result<Self::DepthStencilAttachment, Self::Err>;
 
+  /// Obtain the primary [`RenderTargets`].
+  ///
+  /// This is a special [`RenderTargets`] representing the final output, where attachments cannot be retrieved.
+  fn get_primary_render_targets(
+    &self,
+    width: u32,
+    height: u32,
+  ) -> Result<Self::RenderTargets, Self::Err>;
+
   /// Create a new [`Shader`].
   fn new_shader(&self, sources: ShaderSources) -> Result<Self::Shader, Self::Err>;
 
