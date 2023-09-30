@@ -2,12 +2,13 @@ use std::collections::HashSet;
 
 use piksels_backend::{
   render_targets::{ColorAttachmentPoint, DepthStencilAttachmentPoint},
+  shader::ShaderSources,
   texture::Storage,
   vertex_array::VertexArrayData,
   Backend,
 };
 
-use crate::{render_targets::RenderTargets, vertex_array::VertexArray};
+use crate::{render_targets::RenderTargets, shader::Shader, vertex_array::VertexArray};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Device<B> {
@@ -60,5 +61,9 @@ where
         storage,
       )
       .map(RenderTargets::from_raw)
+  }
+
+  pub fn new_shader(&self, sources: ShaderSources) -> Result<Shader<B>, B::Err> {
+    self.backend.new_shader(sources).map(Shader::from_raw)
   }
 }

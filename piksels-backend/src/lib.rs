@@ -11,7 +11,7 @@ use texture::{Storage, Texture, TextureSampling};
 use viewport::Viewport;
 
 use crate::{
-  shader::{Shader, ShaderSources, Uniform, UniformBuffer, UniformType},
+  shader::{ShaderSources, UniformType},
   vertex_array::{VertexArrayData, VertexArrayUpdate},
 };
 
@@ -52,6 +52,9 @@ pub trait Backend {
   type RenderTargets;
   type ColorAttachment;
   type DepthStencilAttachment;
+  type Shader;
+  type Uniform;
+  type UniformBuffer;
 
   /// Backend author.
   fn author(&self) -> Result<String, Self::Err>;
@@ -105,25 +108,32 @@ pub trait Backend {
   ) -> Result<Self::DepthStencilAttachment, Self::Err>;
 
   /// Create a new [`Shader`].
-  fn new_shader(&self, sources: &ShaderSources) -> Result<Shader, Self::Err>;
+  fn new_shader(&self, sources: ShaderSources) -> Result<Self::Shader, Self::Err>;
 
   /// Drop a [`Shader`].
-  fn drop_shader(shader: &Shader);
+  fn drop_shader(shader: &Self::Shader);
 
   /// Create a new [`Uniform`].
-  fn new_uniform(shader: &Shader, name: &str, ty: UniformType) -> Result<Uniform, Self::Err>;
+  fn get_uniform(
+    shader: &Self::Shader,
+    name: &str,
+    ty: UniformType,
+  ) -> Result<Self::Uniform, Self::Err>;
 
   /// Drop a [`Uniform`].
-  fn drop_uniform(uniform: &Uniform);
+  fn drop_uniform(uniform: &Self::Uniform);
 
   /// Create a new [`UniformBuffer`].
-  fn new_uniform_buffer(shader: &Shader, name: &str) -> Result<UniformBuffer, Self::Err>;
+  fn get_uniform_buffer(
+    shader: &Self::Shader,
+    name: &str,
+  ) -> Result<Self::UniformBuffer, Self::Err>;
 
   /// Drop a [`UniformBuffer`].
-  fn drop_uniform_buffer(uniform_buffer: &UniformBuffer);
+  fn drop_uniform_buffer(uniform_buffer: &Self::UniformBuffer);
 
   /// Set a [`Uniform`].
-  fn set_uniform(shader: &Shader, uniform: &Uniform, value: *const u8) -> Result<(), Self::Err>;
+  fn set_uniform(uniform: &Self::Uniform, value: *const u8) -> Result<(), Self::Err>;
 
   fn new_texture(
     &self,
@@ -179,7 +189,7 @@ pub trait Backend {
     render_targets: &Self::RenderTargets,
   ) -> Result<(), Self::Err>;
 
-  fn cmd_buf_bind_shader(cmd_buf: &CmdBuf, shader: &Shader) -> Result<(), Self::Err>;
+  fn cmd_buf_bind_shader(cmd_buf: &CmdBuf, shader: &Self::Shader) -> Result<(), Self::Err>;
 
   fn cmd_buf_draw_vertex_array(
     cmd_buf: &CmdBuf,

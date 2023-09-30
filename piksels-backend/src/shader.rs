@@ -1,53 +1,38 @@
-#[derive(Debug, Eq, PartialEq)]
-pub struct Shader {
-  handle: usize,
-}
-
-mk_bckd_type_getters!(Shader, handle -> usize);
-
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub struct ShaderSources {
-  tess_ctrl_stage: String,
-  tess_eval_stage: String,
-  vertex_stage: String,
-  geometry_stage: String,
-  fragment_stage: String,
+pub struct ShaderSources<'a> {
+  tess_ctrl_stage: &'a str,
+  tess_eval_stage: &'a str,
+  vertex_stage: &'a str,
+  geometry_stage: &'a str,
+  fragment_stage: &'a str,
 }
 
-impl ShaderSources {
-  pub fn tess_ctrl(mut self, tess_ctrl_stage: impl Into<String>) -> Self {
-    self.tess_ctrl_stage = tess_ctrl_stage.into();
+impl<'a> ShaderSources<'a> {
+  pub fn tess_ctrl(mut self, tess_ctrl_stage: &'a str) -> Self {
+    self.tess_ctrl_stage = tess_ctrl_stage;
     self
   }
 
-  pub fn tess_eval(mut self, tess_eval_stage: impl Into<String>) -> Self {
-    self.tess_eval_stage = tess_eval_stage.into();
+  pub fn tess_eval(mut self, tess_eval_stage: &'a str) -> Self {
+    self.tess_eval_stage = tess_eval_stage;
     self
   }
 
-  pub fn vertex(mut self, vertex_stage: impl Into<String>) -> Self {
-    self.vertex_stage = vertex_stage.into();
+  pub fn vertex(mut self, vertex_stage: &'a str) -> Self {
+    self.vertex_stage = vertex_stage;
     self
   }
 
-  pub fn geometry(mut self, geometry_stage: impl Into<String>) -> Self {
-    self.geometry_stage = geometry_stage.into();
+  pub fn geometry(mut self, geometry_stage: &'a str) -> Self {
+    self.geometry_stage = geometry_stage;
     self
   }
 
-  pub fn fragment(mut self, fragment_stage: impl Into<String>) -> Self {
-    self.fragment_stage = fragment_stage.into();
+  pub fn fragment(mut self, fragment_stage: &'a str) -> Self {
+    self.fragment_stage = fragment_stage;
     self
   }
 }
-
-#[derive(Debug, Eq, PartialEq)]
-pub struct Uniform {
-  index: usize,
-  ty: UniformType,
-}
-
-mk_bckd_type_getters!(Uniform, index -> usize);
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct UniformType {
@@ -98,10 +83,3 @@ pub enum UniformTypeBase {
   // TODO: texture types
   // TODO: shader storage types (like UBO, SSBO, etc.?); -> buffer
 }
-
-#[derive(Debug, Eq, PartialEq)]
-pub struct UniformBuffer {
-  handle: usize,
-}
-
-mk_bckd_type_getters!(UniformBuffer, handle -> usize);
