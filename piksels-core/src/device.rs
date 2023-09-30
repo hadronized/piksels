@@ -9,7 +9,8 @@ use piksels_backend::{
 };
 
 use crate::{
-  render_targets::RenderTargets, shader::Shader, texture::Texture, vertex_array::VertexArray,
+  pipeline::CmdBuf, render_targets::RenderTargets, shader::Shader, texture::Texture,
+  vertex_array::VertexArray,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -74,5 +75,9 @@ where
       .backend
       .new_texture(storage, sampling)
       .map(Texture::from_raw)
+  }
+
+  pub fn new_cmd_buf(&self) -> Result<CmdBuf<B>, B::Err> {
+    self.backend.new_cmd_buf().map(CmdBuf::from_raw)
   }
 }

@@ -4,7 +4,6 @@ use blending::BlendingMode;
 use color::RGBA;
 use depth_stencil::{DepthTest, DepthWrite, StencilTest};
 use face_culling::FaceCulling;
-use pipeline::CmdBuf;
 use render_targets::{ColorAttachmentPoint, DepthStencilAttachmentPoint};
 use scissor::Scissor;
 use texture::{Sampling, Storage};
@@ -34,7 +33,6 @@ pub mod blending;
 pub mod color;
 pub mod depth_stencil;
 pub mod face_culling;
-pub mod pipeline;
 pub mod pixel;
 pub mod primitive;
 pub mod render_targets;
@@ -56,6 +54,7 @@ pub trait Backend {
   type Uniform;
   type UniformBuffer;
   type Texture;
+  type CmdBuf;
 
   /// Backend author.
   fn author(&self) -> Result<String, Self::Err>;
@@ -157,39 +156,49 @@ pub trait Backend {
     value: *const u8,
   ) -> Result<(), Self::Err>;
 
-  fn new_cmd_buf(&self) -> Result<CmdBuf, Self::Err>;
+  fn new_cmd_buf(&self) -> Result<Self::CmdBuf, Self::Err>;
 
-  fn drop_cmd_buf(cmd_buf: &CmdBuf);
+  fn drop_cmd_buf(cmd_buf: &Self::CmdBuf);
 
-  fn cmd_buf_blending(cmd_buf: &CmdBuf, blending: BlendingMode) -> Result<(), Self::Err>;
+  fn cmd_buf_blending(cmd_buf: &Self::CmdBuf, blending: BlendingMode) -> Result<(), Self::Err>;
 
-  fn cmd_buf_depth_test(cmd_buf: &CmdBuf, depth_test: DepthTest) -> Result<(), Self::Err>;
+  fn cmd_buf_depth_test(cmd_buf: &Self::CmdBuf, depth_test: DepthTest) -> Result<(), Self::Err>;
 
-  fn cmd_buf_depth_write(cmd_buf: &CmdBuf, depth_write: DepthWrite) -> Result<(), Self::Err>;
+  fn cmd_buf_depth_write(cmd_buf: &Self::CmdBuf, depth_write: DepthWrite) -> Result<(), Self::Err>;
 
-  fn cmd_buf_stencil_test(cmd_buf: &CmdBuf, stencil_test: StencilTest) -> Result<(), Self::Err>;
+  fn cmd_buf_stencil_test(
+    cmd_buf: &Self::CmdBuf,
+    stencil_test: StencilTest,
+  ) -> Result<(), Self::Err>;
 
-  fn cmd_buf_face_culling(cmd_buf: &CmdBuf, face_culling: FaceCulling) -> Result<(), Self::Err>;
+  fn cmd_buf_face_culling(
+    cmd_buf: &Self::CmdBuf,
+    face_culling: FaceCulling,
+  ) -> Result<(), Self::Err>;
 
-  fn cmd_buf_viewport(cmd_buf: &CmdBuf, viewport: Viewport) -> Result<(), Self::Err>;
+  fn cmd_buf_viewport(cmd_buf: &Self::CmdBuf, viewport: Viewport) -> Result<(), Self::Err>;
 
-  fn cmd_buf_scissor(cmd_buf: &CmdBuf, scissor: Scissor) -> Result<(), Self::Err>;
+  fn cmd_buf_scissor(cmd_buf: &Self::CmdBuf, scissor: Scissor) -> Result<(), Self::Err>;
 
-  fn cmd_buf_clear_color(cmd_buf: &CmdBuf, clear_color: Option<RGBA>) -> Result<(), Self::Err>;
+  fn cmd_buf_clear_color(
+    cmd_buf: &Self::CmdBuf,
+    clear_color: Option<RGBA>,
+  ) -> Result<(), Self::Err>;
 
-  fn cmd_buf_clear_depth(cmd_buf: &CmdBuf, clear_depth: Option<f32>) -> Result<(), Self::Err>;
+  fn cmd_buf_clear_depth(cmd_buf: &Self::CmdBuf, clear_depth: Option<f32>)
+    -> Result<(), Self::Err>;
 
-  fn cmd_buf_srgb(cmd_buf: &CmdBuf, srgb: bool) -> Result<(), Self::Err>;
+  fn cmd_buf_srgb(cmd_buf: &Self::CmdBuf, srgb: bool) -> Result<(), Self::Err>;
 
   fn cmd_buf_bind_render_targets(
-    cmd_buf: &CmdBuf,
+    cmd_buf: &Self::CmdBuf,
     render_targets: &Self::RenderTargets,
   ) -> Result<(), Self::Err>;
 
-  fn cmd_buf_bind_shader(cmd_buf: &CmdBuf, shader: &Self::Shader) -> Result<(), Self::Err>;
+  fn cmd_buf_bind_shader(cmd_buf: &Self::CmdBuf, shader: &Self::Shader) -> Result<(), Self::Err>;
 
   fn cmd_buf_draw_vertex_array(
-    cmd_buf: &CmdBuf,
+    cmd_buf: &Self::CmdBuf,
     vertex_array: &Self::VertexArray,
   ) -> Result<(), Self::Err>;
 }

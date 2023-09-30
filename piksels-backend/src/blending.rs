@@ -5,19 +5,23 @@ pub enum Equation {
   ///
   /// > `blended = src * srcK + dst * dstK`
   Additive,
+
   /// `Subtract` represents the following blending equation:
   ///
   /// > `blended = src * srcK - dst * dstK`
   Subtract,
+
   /// Because subtracting is not commutative, `ReverseSubtract` represents the following additional
   /// blending equation:
   ///
   /// > `blended = dst * dstK - src * srcK`
   ReverseSubtract,
+
   /// `Min` represents the following blending equation:
   ///
   /// > `blended = min(src, dst)`
   Min,
+
   /// `Max` represents the following blending equation:
   ///
   /// > `blended = max(src, dst)`
@@ -30,24 +34,34 @@ pub enum Equation {
 pub enum Factor {
   /// `1 * color = color`
   One,
+
   /// `0 * color = 0`
   Zero,
+
   /// `src * color`
   SrcColor,
+
   /// `(1 - src) * color`
   SrcColorComplement,
+
   /// `dst * color`
   DestColor,
+
   /// `(1 - dst) * color`
   DestColorComplement,
+
   /// `srcA * color`
   SrcAlpha,
+
   /// `(1 - src) * color`
   SrcAlphaComplement,
+
   /// `dstA * color`
   DstAlpha,
+
   /// `(1 - dstA) * color`
   DstAlphaComplement,
+
   /// For colors, `min(srcA, 1 - dstA)`, for alpha, `1`
   SrcAlphaSaturate,
 }
@@ -57,8 +71,10 @@ pub enum Factor {
 pub struct Blending {
   /// Blending equation to use.
   pub equation: Equation,
+
   /// Source factor.
   pub src: Factor,
+
   /// Destination factor.
   pub dst: Factor,
 }
@@ -76,6 +92,7 @@ pub enum BlendingMode {
   Separate {
     /// Blending configuration for RGB components.
     rgb: Blending,
+
     /// Blending configuration for alpha component.
     alpha: Blending,
   },
