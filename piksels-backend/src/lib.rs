@@ -1,6 +1,13 @@
 use std::collections::HashSet;
 
+use blending::BlendingMode;
+use color::RGBA;
+use depth_stencil::{DepthTest, DepthWrite, StencilTest};
+use face_culling::FaceCulling;
+use pipeline::CmdBuf;
+use scissor::Scissor;
 use texture::{Texture, TextureSampling};
+use viewport::Viewport;
 
 use crate::{
   render_targets::{ColorAttachment, DepthStencilAttachment, RenderTargets},
@@ -115,5 +122,39 @@ pub trait Backend {
     rect: texture::Rect,
     mipmaps: bool,
     clear_value: *const u8,
+  ) -> Result<(), Self::Err>;
+
+  fn new_cmd_buf(&self) -> Result<CmdBuf, Self::Err>;
+
+  fn cmd_buf_blending(cmd_buf: &CmdBuf, blending: BlendingMode) -> Result<(), Self::Err>;
+
+  fn cmd_buf_depth_test(cmd_buf: &CmdBuf, depth_test: DepthTest) -> Result<(), Self::Err>;
+
+  fn cmd_buf_depth_write(cmd_buf: &CmdBuf, depth_write: DepthWrite) -> Result<(), Self::Err>;
+
+  fn cmd_buf_stencil_test(cmd_buf: &CmdBuf, stencil_test: StencilTest) -> Result<(), Self::Err>;
+
+  fn cmd_buf_face_culling(cmd_buf: &CmdBuf, face_culling: FaceCulling) -> Result<(), Self::Err>;
+
+  fn cmd_buf_viewport(cmd_buf: &CmdBuf, viewport: Viewport) -> Result<(), Self::Err>;
+
+  fn cmd_buf_scissor(cmd_buf: &CmdBuf, scissor: Scissor) -> Result<(), Self::Err>;
+
+  fn cmd_buf_clear_color(cmd_buf: &CmdBuf, clear_color: Option<RGBA>) -> Result<(), Self::Err>;
+
+  fn cmd_buf_clear_depth(cmd_buf: &CmdBuf, clear_depth: Option<f32>) -> Result<(), Self::Err>;
+
+  fn cmd_buf_srgb(cmd_buf: &CmdBuf, srgb: bool) -> Result<(), Self::Err>;
+
+  fn cmd_buf_bind_render_targets(
+    cmd_buf: &CmdBuf,
+    render_targets: &RenderTargets,
+  ) -> Result<(), Self::Err>;
+
+  fn cmd_buf_bind_shader(cmd_buf: &CmdBuf, shader: &Shader) -> Result<(), Self::Err>;
+
+  fn cmd_buf_draw_vertex_array(
+    cmd_buf: &CmdBuf,
+    vertex_array: &VertexArray,
   ) -> Result<(), Self::Err>;
 }
