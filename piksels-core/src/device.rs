@@ -22,6 +22,10 @@ impl<B> Device<B>
 where
   B: Backend,
 {
+  pub fn new(backend: B) -> Self {
+    Self { backend }
+  }
+
   pub fn author(&self) -> Result<String, B::Err> {
     self.backend.author()
   }
