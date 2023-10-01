@@ -83,7 +83,7 @@ where
     B::cmd_buf_bind_shader(&self.raw, &shader.raw)
   }
 
-  pub fn cmd_buf_draw_vertex_array(&self, vertex_array: &VertexArray<B>) -> Result<(), B::Err> {
+  pub fn draw_vertex_array(&self, vertex_array: &VertexArray<B>) -> Result<(), B::Err> {
     B::cmd_buf_draw_vertex_array(&self.raw, &vertex_array.raw)
   }
 

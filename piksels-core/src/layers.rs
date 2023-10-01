@@ -77,7 +77,7 @@ where
   }
 
   pub fn draw(&self, vertex_array: &VertexArray<B>) -> Result<(), B::Err> {
-    self.cmd_buf.cmd_buf_draw_vertex_array(vertex_array)
+    self.cmd_buf.draw_vertex_array(vertex_array)
   }
 
   pub fn finish(self) -> RenderTargetsLayer<B> {
