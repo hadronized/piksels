@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, fmt::Debug};
 
 use blending::BlendingMode;
 use color::RGBA;
@@ -52,15 +52,15 @@ pub struct BackendInfo {
 pub trait Backend {
   type Err;
 
-  type VertexArray;
-  type RenderTargets;
-  type ColorAttachment;
-  type DepthStencilAttachment;
-  type Shader;
-  type Uniform;
-  type UniformBuffer;
-  type Texture;
-  type CmdBuf;
+  type VertexArray: Debug;
+  type RenderTargets: Debug;
+  type ColorAttachment: Debug;
+  type DepthStencilAttachment: Debug;
+  type Shader: Debug;
+  type Uniform: Debug;
+  type UniformBuffer: Debug;
+  type Texture: Debug;
+  type CmdBuf: Debug;
 
   /// Backend author.
   fn author(&self) -> Result<String, Self::Err>;
