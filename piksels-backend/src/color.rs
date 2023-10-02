@@ -1,28 +1,22 @@
-#[repr(C)]
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub struct RGB {
-  pub r: u8,
-  pub g: u8,
-  pub b: u8,
-}
+macro_rules! mk_color_type {
+  ($ty:ident : $field_ty:ty, $($field_name:ident),*) => {
+    #[repr(C)]
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct $ty {
+      $(
+        pub $field_name: $field_ty
+      ),*
+    }
 
-impl RGB {
-  pub fn new(r: u8, g: u8, b: u8) -> Self {
-    Self { r, g, b }
+		impl $ty {
+      pub fn new($($field_name: $field_ty),*) -> Self {
+        Self { $($field_name),* }
+      }
+		}
   }
 }
 
-#[repr(C)]
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub struct RGBA {
-  pub r: u8,
-  pub g: u8,
-  pub b: u8,
-  pub a: u8,
-}
-
-impl RGBA {
-  pub fn new(r: u8, g: u8, b: u8, a: u8) -> Self {
-    Self { r, g, b, a }
-  }
-}
+mk_color_type!(RGB: u8, r, g, b);
+mk_color_type!(RGBA: u8, r, g, b, a);
+mk_color_type!(RGB32F: f32, r, g, b);
+mk_color_type!(RGBA32F: f32, r, g, b, a);

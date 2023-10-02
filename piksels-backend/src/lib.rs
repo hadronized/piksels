@@ -1,4 +1,4 @@
-use std::{collections::HashSet, fmt::Debug};
+use std::{collections::HashSet, fmt::Debug, hash::Hash};
 
 use blending::BlendingMode;
 use color::RGBA;
@@ -30,6 +30,7 @@ macro_rules! mk_bckd_type_getters {
 }
 
 pub mod blending;
+pub mod cache;
 pub mod color;
 pub mod depth_stencil;
 pub mod face_culling;
@@ -49,18 +50,32 @@ pub struct BackendInfo {
   pub git_commit_hash: &'static str,
 }
 
+/// Backend scarce resources.
+pub trait Scarce: Debug {
+  fn scarce_index(&self) -> usize;
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct ScarceIndex(usize);
+
+impl ScarceIndex {
+  pub fn new(index: usize) -> Self {
+    ScarceIndex(index)
+  }
+}
+
 pub trait Backend {
   type Err;
 
-  type VertexArray: Debug;
-  type RenderTargets: Debug;
-  type ColorAttachment: Debug;
-  type DepthStencilAttachment: Debug;
-  type Shader: Debug;
-  type Uniform: Debug;
-  type UniformBuffer: Debug;
-  type Texture: Debug;
-  type CmdBuf: Debug;
+  type VertexArray: Scarce;
+  type RenderTargets: Scarce;
+  type ColorAttachment: Scarce;
+  type DepthStencilAttachment: Scarce;
+  type Shader: Scarce;
+  type Uniform: Scarce;
+  type UniformBuffer: Scarce;
+  type Texture: Scarce;
+  type CmdBuf: Scarce;
 
   /// Backend author.
   fn author(&self) -> Result<String, Self::Err>;
