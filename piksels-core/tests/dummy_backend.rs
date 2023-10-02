@@ -3,9 +3,6 @@ use std::fmt::Display;
 use piksels_backend::{Backend, BackendInfo};
 use piksels_core::device::Device;
 
-#[derive(Debug)]
-struct DummyBackend;
-
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 enum DummyBackendError {
   Unimplemented,
@@ -16,6 +13,9 @@ impl Display for DummyBackendError {
     f.write_str("unimplemented")
   }
 }
+
+#[derive(Debug)]
+struct DummyBackend;
 
 impl Backend for DummyBackend {
   type CmdBuf = ();
