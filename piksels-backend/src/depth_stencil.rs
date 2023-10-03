@@ -52,25 +52,28 @@ pub enum StencilTest {
   Off,
 
   /// Stencil test is enabled
-  On {
-    /// Comparison to apply to make a fragment pass the test.
-    comparison: Comparison,
+  On(StencilFunc),
+}
 
-    /// Reference value for the comparison.
-    reference: u8,
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+pub struct StencilFunc {
+  /// Comparison to apply to make a fragment pass the test.
+  comparison: Comparison,
 
-    /// The mask to apply on the fragment stencil value.
-    mask: u8,
+  /// Reference value for the comparison.
+  reference: u8,
 
-    /// Action to take when the depth test passes but not the stencil test.
-    depth_passes_stencil_fails: StencilOp,
+  /// The mask to apply on the fragment stencil value.
+  mask: u8,
 
-    /// Action to take when the stencil test passes but not the depth test.
-    depth_fails_stencil_passes: StencilOp,
+  /// Action to take when the depth test passes but not the stencil test.
+  depth_passes_stencil_fails: StencilOp,
 
-    /// Action to take when both the depth and stencil tests pass.
-    depth_stencil_pass: StencilOp,
-  },
+  /// Action to take when the stencil test passes but not the depth test.
+  depth_fails_stencil_passes: StencilOp,
+
+  /// Action to take when both the depth and stencil tests pass.
+  depth_stencil_pass: StencilOp,
 }
 
 /// Possible stencil operations.

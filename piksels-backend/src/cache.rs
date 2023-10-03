@@ -1,20 +1,20 @@
 //! Cached backend state.
 //!
 //! Backends implement a procedural version of the API. However, when we issue a call to a backend function twice with
-//! the same parameter, oftentimes, we could have not ommitted calling the function a second time (e.g. binding twice
-//! the same resource). For this reason, backends function are not directly called, but instead we use a cache to ensure
-//! that function parameters / state have changed.
+//! the same parameter, oftentimes, we could have ommitted calling the function a second time (e.g. binding twice
+//! the same resource). For this reason, backends functions are not directly called, but instead we use a cache to
+//! check whether function parameters / state have changed.
 
 use std::collections::HashMap;
 
 use crate::{
   blending::{Equation, Factor},
   color::RGBA32F,
-  depth_stencil::{Comparison, DepthWrite, StencilOp},
+  depth_stencil::{Comparison, DepthWrite, StencilFunc},
   face_culling::{FaceCullingFace, FaceCullingOrder},
   scissor::ScissorRegion,
   viewport::Viewport,
-  Backend, BackendInfo, ScarceIndex,
+  Backend, BackendInfo, Scarce,
 };
 
 #[derive(Debug)]
@@ -23,15 +23,15 @@ where
   B: Backend,
 {
   // scarce resources allocated by this backend
-  vertex_arrays: HashMap<ScarceIndex, B::VertexArray>,
-  render_targets: HashMap<ScarceIndex, B::RenderTargets>,
-  color_attachments: HashMap<ScarceIndex, B::ColorAttachment>,
-  depth_stencil_attachments: HashMap<ScarceIndex, B::DepthStencilAttachment>,
-  shaders: HashMap<ScarceIndex, B::Shader>,
-  uniforms: HashMap<ScarceIndex, B::Uniform>,
-  uniform_buffers: HashMap<ScarceIndex, B::UniformBuffer>,
-  textures: HashMap<ScarceIndex, B::Texture>,
-  cmd_bufs: HashMap<ScarceIndex, B::CmdBuf>,
+  vertex_arrays: HashMap<B::ScarceIndex, B::VertexArray>,
+  render_targets: HashMap<B::ScarceIndex, B::RenderTargets>,
+  color_attachments: HashMap<B::ScarceIndex, B::ColorAttachment>,
+  depth_stencil_attachments: HashMap<B::ScarceIndex, B::DepthStencilAttachment>,
+  shaders: HashMap<B::ScarceIndex, B::Shader>,
+  uniforms: HashMap<B::ScarceIndex, B::Uniform>,
+  uniform_buffers: HashMap<B::ScarceIndex, B::UniformBuffer>,
+  textures: HashMap<B::ScarceIndex, B::Texture>,
+  cmd_bufs: HashMap<B::ScarceIndex, B::CmdBuf>,
 
   // pipeline variables
   viewport: Cached<Viewport>,
@@ -45,8 +45,7 @@ where
   depth_test_comparison: Cached<Comparison>,
   depth_write: Cached<DepthWrite>,
   stencil_test: Cached<bool>,
-  stencil_func: Cached<(Comparison, u8, u8)>, // TODO: proper typing?
-  stencil_ops: Cached<[StencilOp; 3]>,
+  stencil_func: Cached<StencilFunc>,
   face_culling: Cached<bool>,
   face_culling_order: Cached<FaceCullingOrder>,
   face_culling_face: Cached<FaceCullingFace>,
@@ -64,6 +63,126 @@ where
   info: Cached<BackendInfo>,
 }
 
+impl<B> Default for Cache<B>
+where
+  B: Backend,
+{
+  fn default() -> Self {
+    Self {
+      vertex_arrays: Default::default(),
+      render_targets: Default::default(),
+      color_attachments: Default::default(),
+      depth_stencil_attachments: Default::default(),
+      shaders: Default::default(),
+      uniforms: Default::default(),
+      uniform_buffers: Default::default(),
+      textures: Default::default(),
+      cmd_bufs: Default::default(),
+      viewport: Default::default(),
+      clear_color: Default::default(),
+      clear_depth: Default::default(),
+      clear_stencil: Default::default(),
+      blending_state: Default::default(),
+      blending_equations: Default::default(),
+      blending_factors: Default::default(),
+      depth_test: Default::default(),
+      depth_test_comparison: Default::default(),
+      depth_write: Default::default(),
+      stencil_test: Default::default(),
+      stencil_func: Default::default(),
+      face_culling: Default::default(),
+      face_culling_order: Default::default(),
+      face_culling_face: Default::default(),
+      scissor: Default::default(),
+      scissor_region: Default::default(),
+      primitive_restart: Default::default(),
+      bound_uniform_buffer: Default::default(),
+      bound_render_targets: Default::default(),
+      bound_shader: Default::default(),
+      srgb: Default::default(),
+      author: Default::default(),
+      name: Default::default(),
+      version: Default::default(),
+      shading_lang_version: Default::default(),
+      info: Default::default(),
+    }
+  }
+}
+
+macro_rules! cache_methods_scarce_resource {
+  ($(track = $track:ident, untrack = $untrack:ident ($map:ident : $ty:ident)),* $(,)?) => {
+    $(
+      pub fn $track(&mut self, res: &B::$ty) {
+        self.$map.insert(res.scarce_index(), res.scarce_clone());
+      }
+
+      pub fn $untrack(&mut self, res: &B::$ty) {
+        self.$map.remove(&res.scarce_index());
+      }
+    )*
+  };
+}
+
+macro_rules! cache_methods_pipeline_vars {
+  ($($name:ident: $ty:ty),* $(,)?) => {
+    $(
+      pub fn $name(&mut self) -> &mut Cached<$ty> {
+        &mut self.$name
+      }
+    )*
+  }
+}
+
+impl<B> Cache<B>
+where
+  B: Backend,
+{
+  cache_methods_scarce_resource!(
+    track = track_vertex_array, untrack = untrack_vertex_array (vertex_arrays: VertexArray),
+    track = track_render_targets, untrack = untrack_render_targets (render_targets: RenderTargets),
+    track = track_color_attachment, untrack = untrack_color_attachment (color_attachments: ColorAttachment),
+    track = track_depth_stencil_attachment, untrack = untrack_depth_stencil_attachment (depth_stencil_attachments: DepthStencilAttachment),
+    track = track_shader, untrack = untrack_shader (shaders: Shader),
+    track = track_uniform, untrack = untrack_uniform (uniforms: Uniform),
+    track = track_uniform_buffer, untrack = untrack_uniform_buffer (uniform_buffers: UniformBuffer),
+    track = track_texture, untrack = untrack_texture (textures: Texture),
+    track = track_cmd_buf, untrack = untrack_cmd_buf (cmd_bufs: CmdBuf),
+  );
+
+  cache_methods_pipeline_vars!(
+    viewport: Viewport,
+    clear_color: RGBA32F,
+
+    clear_depth: f32,
+    clear_stencil: i32,
+    blending_state: bool,
+    blending_equations: [Equation; 2],
+    blending_factors: [Factor; 4],
+    depth_test: bool,
+    depth_test_comparison: Comparison,
+    depth_write: DepthWrite,
+    stencil_test: bool,
+    stencil_func: StencilFunc,
+    face_culling: bool,
+    face_culling_order: FaceCullingOrder,
+    face_culling_face: FaceCullingFace,
+    scissor: bool,
+    scissor_region: ScissorRegion,
+    primitive_restart: bool,
+    bound_uniform_buffer: B::UniformBuffer,
+    bound_render_targets: B::RenderTargets,
+    bound_shader: B::Shader,
+    srgb: bool,
+    author: String,
+    name: String,
+    version: String,
+    shading_lang_version: String,
+    info: BackendInfo,
+  );
+}
+
+impl<B> Cache<B> where B: Backend {}
+
 /// Cached value.
 ///
 /// A cached value is used to prevent issuing costy GPU commands if we know the target value is
@@ -74,8 +193,14 @@ where
 ///
 /// This optimization has limits and sometimes, because of side-effects, it is not possible to cache
 /// something correctly.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Cached<T>(Option<T>);
+
+impl<T> Default for Cached<T> {
+  fn default() -> Self {
+    Cached(None)
+  }
+}
 
 impl<T> Cached<T>
 where

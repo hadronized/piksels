@@ -50,32 +50,27 @@ pub struct BackendInfo {
   pub git_commit_hash: &'static str,
 }
 
-/// Backend scarce resources.
-pub trait Scarce: Debug {
-  fn scarce_index(&self) -> usize;
-}
-
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub struct ScarceIndex(usize);
-
-impl ScarceIndex {
-  pub fn new(index: usize) -> Self {
-    ScarceIndex(index)
-  }
+pub trait Scarce<B>: Debug
+where
+  B: Backend + ?Sized,
+{
+  fn scarce_index(&self) -> B::ScarceIndex;
+  fn scarce_clone(&self) -> Self;
 }
 
 pub trait Backend {
   type Err;
 
-  type VertexArray: Scarce;
-  type RenderTargets: Scarce;
-  type ColorAttachment: Scarce;
-  type DepthStencilAttachment: Scarce;
-  type Shader: Scarce;
-  type Uniform: Scarce;
-  type UniformBuffer: Scarce;
-  type Texture: Scarce;
-  type CmdBuf: Scarce;
+  type ScarceIndex: Clone + Debug + Eq + Hash + Ord + PartialEq + PartialOrd;
+  type VertexArray: Scarce<Self>;
+  type RenderTargets: Scarce<Self>;
+  type ColorAttachment: Scarce<Self>;
+  type DepthStencilAttachment: Scarce<Self>;
+  type Shader: Scarce<Self>;
+  type Uniform: Scarce<Self>;
+  type UniformBuffer: Scarce<Self>;
+  type Texture: Scarce<Self>;
+  type CmdBuf: Scarce<Self>;
 
   /// Backend author.
   fn author(&self) -> Result<String, Self::Err>;
