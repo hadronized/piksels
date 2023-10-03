@@ -6,6 +6,7 @@ use depth_stencil::{DepthTest, DepthWrite, StencilTest};
 use face_culling::FaceCulling;
 use render_targets::{ColorAttachmentPoint, DepthStencilAttachmentPoint};
 use scissor::Scissor;
+use swap_chain::SwapChainMode;
 use texture::{Sampling, Storage};
 use viewport::Viewport;
 
@@ -39,6 +40,7 @@ pub mod primitive;
 pub mod render_targets;
 pub mod scissor;
 pub mod shader;
+pub mod swap_chain;
 pub mod texture;
 pub mod vertex;
 pub mod vertex_array;
@@ -71,6 +73,7 @@ pub trait Backend {
   type UniformBuffer: Scarce<Self>;
   type Texture: Scarce<Self>;
   type CmdBuf: Scarce<Self>;
+  type SwapChain: Scarce<Self>;
 
   /// Backend author.
   fn author(&self) -> Result<String, Self::Err>;
@@ -125,15 +128,6 @@ pub trait Backend {
     render_targets: &Self::RenderTargets,
     index: usize,
   ) -> Result<Self::DepthStencilAttachment, Self::Err>;
-
-  /// Obtain the primary [`RenderTargets`].
-  ///
-  /// This is a special [`RenderTargets`] representing the final output, where attachments cannot be retrieved.
-  fn get_primary_render_targets(
-    &self,
-    width: u32,
-    height: u32,
-  ) -> Result<Self::RenderTargets, Self::Err>;
 
   /// Create a new [`Shader`].
   fn new_shader(&self, sources: ShaderSources) -> Result<Self::Shader, Self::Err>;
@@ -231,4 +225,18 @@ pub trait Backend {
   ) -> Result<(), Self::Err>;
 
   fn cmd_buf_finish(cmd_buf: &Self::CmdBuf) -> Result<(), Self::Err>;
+
+  fn new_swap_chain(
+    &self,
+    width: u32,
+    height: u32,
+    mode: SwapChainMode,
+  ) -> Result<Self::SwapChain, Self::Err>;
+
+  fn drop_swap_chain(swap_chain: &Self::SwapChain);
+
+  fn present_render_targets(
+    swap_chain: &Self::SwapChain,
+    render_targets: &Self::RenderTargets,
+  ) -> Result<(), Self::Err>;
 }

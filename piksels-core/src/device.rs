@@ -3,14 +3,15 @@ use std::collections::HashSet;
 use piksels_backend::{
   render_targets::{ColorAttachmentPoint, DepthStencilAttachmentPoint},
   shader::ShaderSources,
+  swap_chain::SwapChainMode,
   texture::{Sampling, Storage},
   vertex_array::VertexArrayData,
   Backend, BackendInfo,
 };
 
 use crate::{
-  layers::Layers, render_targets::RenderTargets, shader::Shader, texture::Texture,
-  vertex_array::VertexArray,
+  layers::Layers, render_targets::RenderTargets, shader::Shader, swap_chain::SwapChain,
+  texture::Texture, vertex_array::VertexArray,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -99,5 +100,17 @@ where
   pub fn new_layers(&self) -> Result<Layers<B>, B::Err> {
     let cmd_buf = self.backend.new_cmd_buf()?;
     Ok(Layers::from_cmd_buf(cmd_buf))
+  }
+
+  pub fn new_swap_chain(
+    &self,
+    width: u32,
+    height: u32,
+    mode: SwapChainMode,
+  ) -> Result<SwapChain<B>, B::Err> {
+    self
+      .backend
+      .new_swap_chain(width, height, mode)
+      .map(SwapChain::from_raw)
   }
 }
