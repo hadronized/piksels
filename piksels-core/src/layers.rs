@@ -26,7 +26,6 @@ where
     Ok(RenderTargetsLayer::from_cmd_buf(self.cmd_buf))
   }
 
-  // TODO: do we really return Layers directly, or something to wait on like a Frame or something?
   pub fn finish(&self) -> Result<(), B::Err> {
     B::cmd_buf_finish(&self.cmd_buf)
   }
