@@ -1,22 +1,20 @@
 use piksels_backend::Backend;
 
-use crate::{
-  pipeline::CmdBuf, render_targets::RenderTargets, shader::Shader, vertex_array::VertexArray,
-};
+use crate::{render_targets::RenderTargets, shader::Shader, vertex_array::VertexArray};
 
 #[derive(Debug)]
 pub struct Layers<B>
 where
   B: Backend,
 {
-  cmd_buf: CmdBuf<B>,
+  cmd_buf: B::CmdBuf,
 }
 
 impl<B> Layers<B>
 where
   B: Backend,
 {
-  pub(crate) fn from_cmd_buf(cmd_buf: CmdBuf<B>) -> Self {
+  pub(crate) fn from_cmd_buf(cmd_buf: B::CmdBuf) -> Self {
     Self { cmd_buf }
   }
 
@@ -24,13 +22,13 @@ where
     self,
     render_targets: &RenderTargets<B>,
   ) -> Result<RenderTargetsLayer<B>, B::Err> {
-    self.cmd_buf.bind_render_targets(render_targets)?;
+    B::cmd_buf_bind_render_targets(&self.cmd_buf, &render_targets.raw)?;
     Ok(RenderTargetsLayer::from_cmd_buf(self.cmd_buf))
   }
 
   // TODO: do we really return Layers directly, or something to wait on like a Frame or something?
   pub fn finish(&self) -> Result<(), B::Err> {
-    self.cmd_buf.finish()
+    B::cmd_buf_finish(&self.cmd_buf)
   }
 }
 
@@ -39,19 +37,19 @@ pub struct RenderTargetsLayer<B>
 where
   B: Backend,
 {
-  cmd_buf: CmdBuf<B>,
+  cmd_buf: B::CmdBuf,
 }
 
 impl<B> RenderTargetsLayer<B>
 where
   B: Backend,
 {
-  fn from_cmd_buf(cmd_buf: CmdBuf<B>) -> Self {
+  fn from_cmd_buf(cmd_buf: B::CmdBuf) -> Self {
     Self { cmd_buf }
   }
 
   pub fn shader(self, shader: &Shader<B>) -> Result<ShaderLayer<B>, B::Err> {
-    self.cmd_buf.bind_shader(shader)?;
+    B::cmd_buf_bind_shader(&self.cmd_buf, &shader.raw)?;
     Ok(ShaderLayer::from_cmd_buf(self.cmd_buf))
   }
 
@@ -65,19 +63,19 @@ pub struct ShaderLayer<B>
 where
   B: Backend,
 {
-  cmd_buf: CmdBuf<B>,
+  cmd_buf: B::CmdBuf,
 }
 
 impl<B> ShaderLayer<B>
 where
   B: Backend,
 {
-  fn from_cmd_buf(cmd_buf: CmdBuf<B>) -> Self {
+  fn from_cmd_buf(cmd_buf: B::CmdBuf) -> Self {
     Self { cmd_buf }
   }
 
   pub fn draw(&self, vertex_array: &VertexArray<B>) -> Result<(), B::Err> {
-    self.cmd_buf.draw_vertex_array(vertex_array)
+    B::cmd_buf_draw_vertex_array(&self.cmd_buf, &vertex_array.raw)
   }
 
   pub fn finish(self) -> RenderTargetsLayer<B> {
