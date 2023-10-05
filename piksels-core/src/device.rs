@@ -75,17 +75,6 @@ where
       .map(RenderTargets::from_raw)
   }
 
-  pub fn primary_render_targets(
-    &self,
-    width: u32,
-    height: u32,
-  ) -> Result<RenderTargets<B>, B::Err> {
-    self
-      .backend
-      .get_primary_render_targets(width, height)
-      .map(RenderTargets::from_raw)
-  }
-
   pub fn new_shader(&self, sources: ShaderSources) -> Result<Shader<B>, B::Err> {
     self.backend.new_shader(sources).map(Shader::from_raw)
   }

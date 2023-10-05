@@ -299,7 +299,7 @@ impl Backend for DummyBackend {
   }
 
   fn drop_swap_chain(_swap_chain: &Self::SwapChain) {
-    todo!()
+    unimplemented!()
   }
 
   fn present_render_targets(
