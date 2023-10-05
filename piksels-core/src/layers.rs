@@ -8,7 +8,11 @@ use piksels_backend::{
   Backend,
 };
 
-use crate::{render_targets::RenderTargets, shader::Shader, vertex_array::VertexArray};
+use crate::{
+  render_targets::RenderTargets,
+  shader::{Shader, Uniform},
+  vertex_array::VertexArray,
+};
 
 #[derive(Debug)]
 pub struct Layers<B>
@@ -79,6 +83,10 @@ where
 {
   fn from_cmd_buf(cmd_buf: B::CmdBuf) -> Self {
     Self { cmd_buf }
+  }
+
+  pub fn set_uniform(&self, uniform: &Uniform<B>, value: *const u8) -> Result<(), B::Err> {
+    B::cmd_buf_set_uniform(&self.cmd_buf, &uniform.raw, value)
   }
 
   pub fn draw(&self, vertex_array: &VertexArray<B>) -> Result<(), B::Err> {

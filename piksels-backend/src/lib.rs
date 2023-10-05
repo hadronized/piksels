@@ -154,9 +154,6 @@ pub trait Backend {
   /// Drop a [`UniformBuffer`].
   fn drop_uniform_buffer(uniform_buffer: &Self::UniformBuffer);
 
-  /// Set a [`Uniform`].
-  fn set_uniform(uniform: &Self::Uniform, value: *const u8) -> Result<(), Self::Err>;
-
   fn new_texture(&self, storage: Storage, sampling: Sampling) -> Result<Self::Texture, Self::Err>;
 
   fn drop_texture(texture: &Self::Texture);
@@ -211,6 +208,12 @@ pub trait Backend {
     -> Result<(), Self::Err>;
 
   fn cmd_buf_srgb(cmd_buf: &Self::CmdBuf, srgb: bool) -> Result<(), Self::Err>;
+
+  fn cmd_buf_set_uniform(
+    cmd_buf: &Self::CmdBuf,
+    uniform: &Self::Uniform,
+    value: *const u8,
+  ) -> Result<(), Self::Err>;
 
   fn cmd_buf_bind_render_targets(
     cmd_buf: &Self::CmdBuf,

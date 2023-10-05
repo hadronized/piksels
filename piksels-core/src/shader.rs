@@ -51,15 +51,6 @@ where
   }
 }
 
-impl<B> Uniform<B>
-where
-  B: Backend,
-{
-  pub fn set(&self, value: *const u8) -> Result<(), B::Err> {
-    B::set_uniform(&self.raw, value)
-  }
-}
-
 #[derive(Debug, Eq, PartialEq)]
 pub struct UniformBuffer<B>
 where
