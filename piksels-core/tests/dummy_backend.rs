@@ -150,10 +150,6 @@ impl Backend for DummyBackend {
     unimplemented!()
   }
 
-  fn set_uniform(_uniform: &Self::Uniform, _value: *const u8) -> Result<(), Self::Err> {
-    Err(DummyBackendError::Unimplemented)
-  }
-
   fn new_texture(
     &self,
     _storage: piksels_backend::texture::Storage,
@@ -264,6 +260,14 @@ impl Backend for DummyBackend {
   }
 
   fn cmd_buf_srgb(_cmd_buf: &Self::CmdBuf, _srgb: bool) -> Result<(), Self::Err> {
+    Err(DummyBackendError::Unimplemented)
+  }
+
+  fn cmd_buf_set_uniform(
+    _cmd_buf: &Self::CmdBuf,
+    _uniform: &Self::Uniform,
+    _value: *const u8,
+  ) -> Result<(), Self::Err> {
     Err(DummyBackendError::Unimplemented)
   }
 
