@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use piksels_backend::{Backend, BackendInfo};
+use piksels_backend::{Backend, BackendInfo, Scarce};
 use piksels_core::device::Device;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
@@ -15,19 +15,32 @@ impl Display for DummyBackendError {
 }
 
 #[derive(Debug)]
+struct DummyResource;
+
+impl Scarce<DummyBackend> for DummyResource {
+  fn scarce_index(&self) {}
+
+  fn scarce_clone(&self) -> Self {
+    DummyResource
+  }
+}
+
+#[derive(Debug)]
 struct DummyBackend;
 
 impl Backend for DummyBackend {
-  type CmdBuf = ();
-  type ColorAttachment = ();
-  type DepthStencilAttachment = ();
+  type CmdBuf = DummyResource;
+  type ColorAttachment = DummyResource;
+  type DepthStencilAttachment = DummyResource;
   type Err = DummyBackendError;
-  type RenderTargets = ();
-  type Shader = ();
-  type Texture = ();
-  type Uniform = ();
-  type UniformBuffer = ();
-  type VertexArray = ();
+  type RenderTargets = DummyResource;
+  type ScarceIndex = ();
+  type Shader = DummyResource;
+  type SwapChain = DummyResource;
+  type Texture = DummyResource;
+  type Uniform = DummyResource;
+  type UniformBuffer = DummyResource;
+  type VertexArray = DummyResource;
 
   fn author(&self) -> Result<String, Self::Err> {
     Ok("Dimitri 'phaazon' Sabadie <dimitri.sabadie@gmail.com>".to_owned())
@@ -100,14 +113,6 @@ impl Backend for DummyBackend {
     _render_targets: &Self::RenderTargets,
     _index: usize,
   ) -> Result<Self::DepthStencilAttachment, Self::Err> {
-    Err(DummyBackendError::Unimplemented)
-  }
-
-  fn get_primary_render_targets(
-    &self,
-    _width: u32,
-    _height: u32,
-  ) -> Result<Self::RenderTargets, Self::Err> {
     Err(DummyBackendError::Unimplemented)
   }
 
@@ -281,6 +286,26 @@ impl Backend for DummyBackend {
   }
 
   fn cmd_buf_finish(_cmd_buf: &Self::CmdBuf) -> Result<(), Self::Err> {
+    Err(DummyBackendError::Unimplemented)
+  }
+
+  fn new_swap_chain(
+    &self,
+    _width: u32,
+    _height: u32,
+    _mode: piksels_backend::swap_chain::SwapChainMode,
+  ) -> Result<Self::SwapChain, Self::Err> {
+    Err(DummyBackendError::Unimplemented)
+  }
+
+  fn drop_swap_chain(_swap_chain: &Self::SwapChain) {
+    todo!()
+  }
+
+  fn present_render_targets(
+    _swap_chain: &Self::SwapChain,
+    _render_targets: &Self::RenderTargets,
+  ) -> Result<(), Self::Err> {
     Err(DummyBackendError::Unimplemented)
   }
 }
