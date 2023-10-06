@@ -60,20 +60,25 @@ where
   fn scarce_clone(&self) -> Self;
 }
 
+pub trait Unit: Clone + Debug + Default + Eq + Hash + Ord + PartialEq + PartialOrd {
+  fn next_unit(&self) -> Self;
+}
+
 pub trait Backend {
   type Err;
 
-  type ScarceIndex: Clone + Debug + Eq + Hash + Ord + PartialEq + PartialOrd;
-  type VertexArray: Scarce<Self>;
-  type RenderTargets: Scarce<Self>;
+  type CmdBuf: Scarce<Self>;
   type ColorAttachment: Scarce<Self>;
   type DepthStencilAttachment: Scarce<Self>;
+  type RenderTargets: Scarce<Self>;
+  type ScarceIndex: Clone + Debug + Eq + Hash + Ord + PartialEq + PartialOrd;
   type Shader: Scarce<Self>;
+  type SwapChain: Scarce<Self>;
+  type Texture: Scarce<Self>;
   type Uniform: Scarce<Self>;
   type UniformBuffer: Scarce<Self>;
-  type Texture: Scarce<Self>;
-  type CmdBuf: Scarce<Self>;
-  type SwapChain: Scarce<Self>;
+  type Unit: Unit;
+  type VertexArray: Scarce<Self>;
 
   /// Backend author.
   fn author(&self) -> Result<String, Self::Err>;
