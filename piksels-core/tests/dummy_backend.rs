@@ -1,11 +1,18 @@
 use std::fmt::Display;
 
-use piksels_backend::{Backend, BackendInfo, Scarce, Unit};
+use piksels_backend::{error::Error, Backend, BackendInfo, Scarce, Unit};
 use piksels_core::device::Device;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 enum DummyBackendError {
+  Common(Error),
   Unimplemented,
+}
+
+impl From<Error> for DummyBackendError {
+  fn from(e: Error) -> Self {
+    DummyBackendError::Common(e)
+  }
 }
 
 impl Display for DummyBackendError {
@@ -31,6 +38,12 @@ pub struct DummyUnit;
 impl Unit for DummyUnit {
   fn next_unit(&self) -> Self {
     DummyUnit
+  }
+}
+
+impl Display for DummyUnit {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.write_str("DummyUnit")
   }
 }
 
@@ -284,14 +297,16 @@ impl Backend for DummyBackend {
   fn cmd_buf_bind_texture(
     _cmd_buf: &Self::CmdBuf,
     _texture: &Self::Texture,
-  ) -> Result<Self::Unit, Self::Err> {
+    _unit: &Self::Unit,
+  ) -> Result<(), Self::Err> {
     Err(DummyBackendError::Unimplemented)
   }
 
   fn cmd_buf_bind_uniform_buffer(
     _cmd_buf: &Self::CmdBuf,
     _uniform_buffer: &Self::Texture,
-  ) -> Result<Self::Unit, Self::Err> {
+    _unit: &Self::Unit,
+  ) -> Result<(), Self::Err> {
     Err(DummyBackendError::Unimplemented)
   }
 
@@ -342,7 +357,7 @@ impl Backend for DummyBackend {
   }
 
   fn max_uniform_buffer_units(&self) -> Result<Self::Unit, Self::Err> {
-    Err(Duniform_bufferkendError::Unimplemented)
+    Err(DummyBackendError::Unimplemented)
   }
 }
 

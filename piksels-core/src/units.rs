@@ -39,12 +39,7 @@ where
       })
     } else {
       // we have exhausted the device units; try to reuse an idle one and if we cannot, then it’s an error
-      self.reuse_unit().ok_or(
-        Error::NoMoreUnits {
-          max_units: self.max_units.clone(),
-        }
-        .into(),
-      )
+      self.reuse_unit().ok_or(Error::NoMoreUnits.into())
     }
   }
 

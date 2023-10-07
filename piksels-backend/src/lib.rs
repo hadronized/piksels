@@ -73,7 +73,7 @@ pub trait Unit:
 }
 
 pub trait Backend {
-  type Err: From<Error<Self>>;
+  type Err: From<Error>;
 
   type CmdBuf: Scarce<Self>;
   type ColorAttachment: Scarce<Self>;
