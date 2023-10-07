@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use piksels_backend::{Backend, BackendInfo, Scarce};
+use piksels_backend::{Backend, BackendInfo, Scarce, Unit};
 use piksels_core::device::Device;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
@@ -25,6 +25,15 @@ impl Scarce<DummyBackend> for DummyResource {
   }
 }
 
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub struct DummyUnit;
+
+impl Unit for DummyUnit {
+  fn next_unit(&self) -> Self {
+    DummyUnit
+  }
+}
+
 #[derive(Debug)]
 struct DummyBackend;
 
@@ -40,6 +49,7 @@ impl Backend for DummyBackend {
   type Texture = DummyResource;
   type Uniform = DummyResource;
   type UniformBuffer = DummyResource;
+  type Unit = DummyUnit;
   type VertexArray = DummyResource;
 
   fn author(&self) -> Result<String, Self::Err> {
