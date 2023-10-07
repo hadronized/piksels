@@ -220,6 +220,16 @@ pub trait Backend {
     value: *const u8,
   ) -> Result<(), Self::Err>;
 
+  fn cmd_buf_bind_texture(
+    cmd_buf: &Self::CmdBuf,
+    texture: &Self::Texture,
+  ) -> Result<Self::Unit, Self::Err>;
+
+  fn cmd_buf_bind_uniform_buffer(
+    cmd_buf: &Self::CmdBuf,
+    uniform_buffer: &Self::UniformBuffer,
+  ) -> Result<Self::Unit, Self::Err>;
+
   fn cmd_buf_bind_render_targets(
     cmd_buf: &Self::CmdBuf,
     render_targets: &Self::RenderTargets,

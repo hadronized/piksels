@@ -281,6 +281,20 @@ impl Backend for DummyBackend {
     Err(DummyBackendError::Unimplemented)
   }
 
+  fn cmd_buf_bind_texture(
+    _cmd_buf: &Self::CmdBuf,
+    _texture: &Self::Texture,
+  ) -> Result<Self::Unit, Self::Err> {
+    Err(DummyBackendError::Unimplemented)
+  }
+
+  fn cmd_buf_bind_uniform_buffer(
+    _cmd_buf: &Self::CmdBuf,
+    _uniform_buffer: &Self::Texture,
+  ) -> Result<Self::Unit, Self::Err> {
+    Err(DummyBackendError::Unimplemented)
+  }
+
   fn cmd_buf_bind_render_targets(
     _cmd_buf: &Self::CmdBuf,
     _render_targets: &Self::RenderTargets,
