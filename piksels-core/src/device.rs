@@ -88,7 +88,7 @@ where
 
   pub fn new_layers(&self) -> Result<Layers<B>, B::Err> {
     let cmd_buf = self.backend.new_cmd_buf()?;
-    Ok(Layers::from_cmd_buf(cmd_buf))
+    Layers::from_cmd_buf(cmd_buf)
   }
 
   pub fn new_swap_chain(

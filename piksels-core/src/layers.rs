@@ -14,6 +14,7 @@ use crate::{
   render_targets::RenderTargets,
   shader::{Shader, Uniform, UniformBuffer},
   texture::Texture,
+  units::Units,
   vertex_array::VertexArray,
 };
 
@@ -21,7 +22,12 @@ pub trait ChangeLayer<B>
 where
   B: Backend,
 {
-  fn change_layer(cmd_buf: B::CmdBuf, in_use_stack: Vec<GroupLayerInUse<B>>) -> Self;
+  fn change_layer(
+    cmd_buf: B::CmdBuf,
+    texture_units: Units<B>,
+    uniform_buffer_units: Units<B>,
+    in_use_stack: Vec<GroupLayerInUse<B>>,
+  ) -> Self;
 }
 
 #[derive(Debug)]
@@ -30,6 +36,8 @@ where
   B: Backend,
 {
   cmd_buf: B::CmdBuf,
+  texture_units: Units<B>,
+  uniform_buffer_units: Units<B>,
   in_use_stack: Vec<GroupLayerInUse<B>>,
 }
 
@@ -37,9 +45,16 @@ impl<B> ChangeLayer<B> for Layers<B>
 where
   B: Backend,
 {
-  fn change_layer(cmd_buf: B::CmdBuf, in_use_stack: Vec<GroupLayerInUse<B>>) -> Self {
+  fn change_layer(
+    cmd_buf: B::CmdBuf,
+    texture_units: Units<B>,
+    uniform_buffer_units: Units<B>,
+    in_use_stack: Vec<GroupLayerInUse<B>>,
+  ) -> Self {
     Self {
       cmd_buf,
+      texture_units,
+      uniform_buffer_units,
       in_use_stack,
     }
   }
@@ -49,11 +64,13 @@ impl<B> Layers<B>
 where
   B: Backend,
 {
-  pub(crate) fn from_cmd_buf(cmd_buf: B::CmdBuf) -> Self {
-    Self {
+  pub(crate) fn from_cmd_buf(cmd_buf: B::CmdBuf) -> Result<Self, B::Err> {
+    Ok(Self {
       cmd_buf,
+      texture_units: Units::new(B::max_texture_units()?),
+      uniform_buffer_units: Units::new(B::max_uniform_buffer_units()?),
       in_use_stack: Vec::default(),
-    }
+    })
   }
 
   pub fn render_targets(
@@ -64,6 +81,8 @@ where
 
     Ok(RenderTargetsLayer::change_layer(
       self.cmd_buf,
+      self.texture_units,
+      self.uniform_buffer_units,
       self.in_use_stack,
     ))
   }
@@ -80,6 +99,8 @@ where
   B: Backend,
 {
   cmd_buf: B::CmdBuf,
+  texture_units: Units<B>,
+  uniform_buffer_units: Units<B>,
   in_use_stack: Vec<GroupLayerInUse<B>>,
 }
 
@@ -87,9 +108,16 @@ impl<B> ChangeLayer<B> for RenderTargetsLayer<B>
 where
   B: Backend,
 {
-  fn change_layer(cmd_buf: B::CmdBuf, in_use_stack: Vec<GroupLayerInUse<B>>) -> Self {
+  fn change_layer(
+    cmd_buf: B::CmdBuf,
+    texture_units: Units<B>,
+    uniform_buffer_units: Units<B>,
+    in_use_stack: Vec<GroupLayerInUse<B>>,
+  ) -> Self {
     Self {
       cmd_buf,
+      texture_units,
+      uniform_buffer_units,
       in_use_stack,
     }
   }
@@ -101,12 +129,22 @@ where
 {
   pub fn shader(self, shader: &Shader<B>) -> Result<ShaderLayer<B>, B::Err> {
     B::cmd_buf_bind_shader(&self.cmd_buf, &shader.raw)?;
-    Ok(ShaderLayer::change_layer(self.cmd_buf, self.in_use_stack))
+    Ok(ShaderLayer::change_layer(
+      self.cmd_buf,
+      self.texture_units,
+      self.uniform_buffer_units,
+      self.in_use_stack,
+    ))
   }
 
   // TODO: in use / idle
   pub fn done(self) -> Layers<B> {
-    Layers::change_layer(self.cmd_buf, self.in_use_stack)
+    Layers::change_layer(
+      self.cmd_buf,
+      self.texture_units,
+      self.uniform_buffer_units,
+      self.in_use_stack,
+    )
   }
 }
 
@@ -116,6 +154,8 @@ where
   B: Backend,
 {
   cmd_buf: B::CmdBuf,
+  texture_units: Units<B>,
+  uniform_buffer_units: Units<B>,
   in_use_stack: Vec<GroupLayerInUse<B>>,
 }
 
@@ -123,9 +163,16 @@ impl<B> ChangeLayer<B> for ShaderLayer<B>
 where
   B: Backend,
 {
-  fn change_layer(cmd_buf: B::CmdBuf, in_use_stack: Vec<GroupLayerInUse<B>>) -> Self {
+  fn change_layer(
+    cmd_buf: B::CmdBuf,
+    texture_units: Units<B>,
+    uniform_buffer_units: Units<B>,
+    in_use_stack: Vec<GroupLayerInUse<B>>,
+  ) -> Self {
     Self {
       cmd_buf,
+      texture_units,
+      uniform_buffer_units,
       in_use_stack,
     }
   }
@@ -145,7 +192,12 @@ where
 
   // TODO: in use / idle
   pub fn done(self) -> RenderTargetsLayer<B> {
-    RenderTargetsLayer::change_layer(self.cmd_buf, self.in_use_stack)
+    RenderTargetsLayer::change_layer(
+      self.cmd_buf,
+      self.texture_units,
+      self.uniform_buffer_units,
+      self.in_use_stack,
+    )
   }
 }
 
@@ -177,6 +229,8 @@ where
   Parent: ?Sized,
 {
   cmd_buf: B::CmdBuf,
+  texture_units: Units<B>,
+  uniform_buffer_units: Units<B>,
   in_use: GroupLayerInUse<B>,
   in_use_stack: Vec<GroupLayerInUse<B>>,
   _phantom: PhantomData<*const Parent>,
@@ -186,11 +240,18 @@ impl<B, Parent> ChangeLayer<B> for GroupLayer<B, Parent>
 where
   B: Backend,
 {
-  fn change_layer(cmd_buf: B::CmdBuf, mut in_use_stack: Vec<GroupLayerInUse<B>>) -> Self {
+  fn change_layer(
+    cmd_buf: B::CmdBuf,
+    texture_units: Units<B>,
+    uniform_buffer_units: Units<B>,
+    mut in_use_stack: Vec<GroupLayerInUse<B>>,
+  ) -> Self {
     let in_use = in_use_stack.pop().unwrap_or_default();
 
     Self {
       cmd_buf,
+      texture_units,
+      uniform_buffer_units,
       in_use,
       in_use_stack,
       _phantom: PhantomData,
@@ -206,7 +267,12 @@ where
   // TODO: in use / idle
   pub fn done(mut self) -> Parent {
     self.in_use_stack.push(self.in_use);
-    Parent::change_layer(self.cmd_buf, self.in_use_stack)
+    Parent::change_layer(
+      self.cmd_buf,
+      self.texture_units,
+      self.uniform_buffer_units,
+      self.in_use_stack,
+    )
   }
 }
 
@@ -289,7 +355,7 @@ macro_rules! impl_layer_variables {
         }
 
         fn group(self) -> GroupLayer<B, Self> {
-          GroupLayer::change_layer(self.cmd_buf, self.in_use_stack)
+          GroupLayer::change_layer(self.cmd_buf, self.texture_units, self.uniform_buffer_units, self.in_use_stack)
         }
       }
     )*

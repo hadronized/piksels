@@ -257,4 +257,8 @@ pub trait Backend {
     swap_chain: &Self::SwapChain,
     render_targets: &Self::RenderTargets,
   ) -> Result<(), Self::Err>;
+
+  fn max_texture_units() -> Result<Self::Unit, Self::Err>;
+
+  fn max_uniform_buffer_units() -> Result<Self::Unit, Self::Err>;
 }
