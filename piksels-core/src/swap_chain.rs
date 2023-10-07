@@ -27,6 +27,10 @@ where
     Self { raw }
   }
 
+  pub fn render_targets(&self) -> Result<RenderTargets<B>, B::Err> {
+    B::swap_chain_render_targets(&self.raw).map(RenderTargets::from_raw)
+  }
+
   pub fn present(&self, render_targets: &RenderTargets<B>) -> Result<(), B::Err> {
     B::present_render_targets(&self.raw, &render_targets.raw)
   }

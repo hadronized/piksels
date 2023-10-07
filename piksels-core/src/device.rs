@@ -51,8 +51,10 @@ where
     &self,
     vertices: VertexArrayData,
     instances: VertexArrayData,
-    indices: Vec<u32>,
+    indices: impl Into<Vec<u32>>,
   ) -> Result<VertexArray<B>, B::Err> {
+    let indices = indices.into();
+
     self
       .backend
       .new_vertex_array(&vertices, &instances, &indices)

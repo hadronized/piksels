@@ -184,12 +184,14 @@ impl<B> ShaderLayer<B>
 where
   B: Backend,
 {
-  pub fn set_uniform(&self, uniform: &Uniform<B>, value: *const u8) -> Result<(), B::Err> {
-    B::cmd_buf_set_uniform(&self.cmd_buf, &uniform.raw, value)
+  pub fn set_uniform(&self, uniform: &Uniform<B>, value: *const u8) -> Result<&Self, B::Err> {
+    B::cmd_buf_set_uniform(&self.cmd_buf, &uniform.raw, value)?;
+    Ok(self)
   }
 
-  pub fn draw(&self, vertex_array: &VertexArray<B>) -> Result<(), B::Err> {
-    B::cmd_buf_draw_vertex_array(&self.cmd_buf, &vertex_array.raw)
+  pub fn draw(&self, vertex_array: &VertexArray<B>) -> Result<&Self, B::Err> {
+    B::cmd_buf_draw_vertex_array(&self.cmd_buf, &vertex_array.raw)?;
+    Ok(self)
   }
 
   pub fn done(self) -> RenderTargetsLayer<B> {
@@ -334,16 +336,16 @@ pub trait LayerCommons<B>
 where
   B: Backend,
 {
-  fn blending(&self, blending: BlendingMode) -> Result<(), B::Err>;
-  fn depth_test(&self, depth_test: DepthTest) -> Result<(), B::Err>;
-  fn depth_write(&self, depth_write: DepthWrite) -> Result<(), B::Err>;
-  fn stencil_test(&self, stencil_test: StencilTest) -> Result<(), B::Err>;
-  fn face_culling(&self, face_culling: FaceCulling) -> Result<(), B::Err>;
-  fn viewport(&self, viewport: Viewport) -> Result<(), B::Err>;
-  fn scissor(&self, scissor: Scissor) -> Result<(), B::Err>;
-  fn clear_color(&self, clear_color: impl Into<Option<RGBA>>) -> Result<(), B::Err>;
-  fn clear_depth(&self, clear_depth: impl Into<Option<f32>>) -> Result<(), B::Err>;
-  fn srgb(&self, srgb: bool) -> Result<(), B::Err>;
+  fn blending(&self, blending: BlendingMode) -> Result<&Self, B::Err>;
+  fn depth_test(&self, depth_test: DepthTest) -> Result<&Self, B::Err>;
+  fn depth_write(&self, depth_write: DepthWrite) -> Result<&Self, B::Err>;
+  fn stencil_test(&self, stencil_test: StencilTest) -> Result<&Self, B::Err>;
+  fn face_culling(&self, face_culling: FaceCulling) -> Result<&Self, B::Err>;
+  fn viewport(&self, viewport: Viewport) -> Result<&Self, B::Err>;
+  fn scissor(&self, scissor: Scissor) -> Result<&Self, B::Err>;
+  fn clear_color(&self, clear_color: impl Into<Option<RGBA>>) -> Result<&Self, B::Err>;
+  fn clear_depth(&self, clear_depth: impl Into<Option<f32>>) -> Result<&Self, B::Err>;
+  fn srgb(&self, srgb: bool) -> Result<&Self, B::Err>;
   fn group(self) -> GroupLayer<B, Self>;
 }
 
@@ -354,44 +356,54 @@ macro_rules! impl_layer_variables {
       where
         B: Backend,
       {
-        fn blending(&self, blending: BlendingMode) -> Result<(), B::Err> {
-          B::cmd_buf_blending(&self.cmd_buf, blending)
+        fn blending(&self, blending: BlendingMode) -> Result<&Self, B::Err> {
+          B::cmd_buf_blending(&self.cmd_buf, blending)?;
+          Ok(self)
         }
 
-        fn depth_test(&self, depth_test: DepthTest) -> Result<(), B::Err> {
-          B::cmd_buf_depth_test(&self.cmd_buf, depth_test)
+        fn depth_test(&self, depth_test: DepthTest) -> Result<&Self, B::Err> {
+          B::cmd_buf_depth_test(&self.cmd_buf, depth_test)?;
+          Ok(self)
         }
 
-        fn depth_write(&self, depth_write: DepthWrite) -> Result<(), B::Err> {
-          B::cmd_buf_depth_write(&self.cmd_buf, depth_write)
+        fn depth_write(&self, depth_write: DepthWrite) -> Result<&Self, B::Err> {
+          B::cmd_buf_depth_write(&self.cmd_buf, depth_write)?;
+          Ok(self)
         }
 
-        fn stencil_test(&self, stencil_test: StencilTest) -> Result<(), B::Err> {
-          B::cmd_buf_stencil_test(&self.cmd_buf, stencil_test)
+        fn stencil_test(&self, stencil_test: StencilTest) -> Result<&Self, B::Err> {
+          B::cmd_buf_stencil_test(&self.cmd_buf, stencil_test)?;
+          Ok(self)
         }
 
-        fn face_culling(&self, face_culling: FaceCulling) -> Result<(), B::Err> {
-          B::cmd_buf_face_culling(&self.cmd_buf, face_culling)
+        fn face_culling(&self, face_culling: FaceCulling) -> Result<&Self, B::Err> {
+          B::cmd_buf_face_culling(&self.cmd_buf, face_culling)?;
+          Ok(self)
         }
 
-        fn viewport(&self, viewport: Viewport) -> Result<(), B::Err> {
-          B::cmd_buf_viewport(&self.cmd_buf, viewport)
+        fn viewport(&self, viewport: Viewport) -> Result<&Self, B::Err> {
+          B::cmd_buf_viewport(&self.cmd_buf, viewport)?;
+          Ok(self)
         }
 
-        fn scissor(&self, scissor: Scissor) -> Result<(), B::Err> {
-          B::cmd_buf_scissor(&self.cmd_buf, scissor)
+        fn scissor(&self, scissor: Scissor) -> Result<&Self, B::Err> {
+          B::cmd_buf_scissor(&self.cmd_buf, scissor)?;
+          Ok(self)
         }
 
-        fn clear_color(&self, clear_color: impl Into<Option<RGBA>>) -> Result<(), B::Err> {
-          B::cmd_buf_clear_color(&self.cmd_buf, clear_color.into())
+        fn clear_color(&self, clear_color: impl Into<Option<RGBA>>) -> Result<&Self, B::Err> {
+          B::cmd_buf_clear_color(&self.cmd_buf, clear_color.into())?;
+          Ok(self)
         }
 
-        fn clear_depth(&self, clear_depth: impl Into<Option<f32>>) -> Result<(), B::Err> {
-          B::cmd_buf_clear_depth(&self.cmd_buf, clear_depth.into())
+        fn clear_depth(&self, clear_depth: impl Into<Option<f32>>) -> Result<&Self, B::Err> {
+          B::cmd_buf_clear_depth(&self.cmd_buf, clear_depth.into())?;
+          Ok(self)
         }
 
-        fn srgb(&self, srgb: bool) -> Result<(), B::Err> {
-          B::cmd_buf_srgb(&self.cmd_buf, srgb)
+        fn srgb(&self, srgb: bool) -> Result<&Self, B::Err> {
+          B::cmd_buf_srgb(&self.cmd_buf, srgb)?;
+          Ok(self)
         }
 
         fn group(self) -> GroupLayer<B, Self> {

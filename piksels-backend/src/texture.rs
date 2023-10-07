@@ -92,7 +92,7 @@ pub enum Storage {
   /// 1D texture.
   ///
   /// The texture will have a `x` coordinate and `w` (`width`) dimension.
-  Flat1D { with: u32 },
+  Flat1D { width: u32 },
 
   /// 2D texture.
   ///

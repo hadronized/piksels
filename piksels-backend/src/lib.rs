@@ -263,6 +263,10 @@ pub trait Backend {
 
   fn drop_swap_chain(swap_chain: &Self::SwapChain);
 
+  fn swap_chain_render_targets(
+    swap_chain: &Self::SwapChain,
+  ) -> Result<Self::RenderTargets, Self::Err>;
+
   fn present_render_targets(
     swap_chain: &Self::SwapChain,
     render_targets: &Self::RenderTargets,
