@@ -1,8 +1,13 @@
-use std::{collections::HashSet, fmt::Debug, hash::Hash};
+use std::{
+  collections::HashSet,
+  fmt::{Debug, Display},
+  hash::Hash,
+};
 
 use blending::BlendingMode;
 use color::RGBA;
 use depth_stencil::{DepthTest, DepthWrite, StencilTest};
+use error::Error;
 use face_culling::FaceCulling;
 use render_targets::{ColorAttachmentPoint, DepthStencilAttachmentPoint};
 use scissor::Scissor;
@@ -34,6 +39,7 @@ pub mod blending;
 pub mod cache;
 pub mod color;
 pub mod depth_stencil;
+pub mod error;
 pub mod face_culling;
 pub mod pixel;
 pub mod primitive;
@@ -60,12 +66,14 @@ where
   fn scarce_clone(&self) -> Self;
 }
 
-pub trait Unit: Clone + Debug + Default + Eq + Hash + Ord + PartialEq + PartialOrd {
+pub trait Unit:
+  Clone + Debug + Display + Default + Eq + Hash + Ord + PartialEq + PartialOrd
+{
   fn next_unit(&self) -> Self;
 }
 
 pub trait Backend {
-  type Err;
+  type Err: From<Error<Self>>;
 
   type CmdBuf: Scarce<Self>;
   type ColorAttachment: Scarce<Self>;
@@ -223,12 +231,14 @@ pub trait Backend {
   fn cmd_buf_bind_texture(
     cmd_buf: &Self::CmdBuf,
     texture: &Self::Texture,
-  ) -> Result<Self::Unit, Self::Err>;
+    unit: &Self::Unit,
+  ) -> Result<(), Self::Err>;
 
   fn cmd_buf_bind_uniform_buffer(
     cmd_buf: &Self::CmdBuf,
     uniform_buffer: &Self::UniformBuffer,
-  ) -> Result<Self::Unit, Self::Err>;
+    unit: &Self::Unit,
+  ) -> Result<(), Self::Err>;
 
   fn cmd_buf_bind_render_targets(
     cmd_buf: &Self::CmdBuf,
@@ -258,7 +268,7 @@ pub trait Backend {
     render_targets: &Self::RenderTargets,
   ) -> Result<(), Self::Err>;
 
-  fn max_texture_units() -> Result<Self::Unit, Self::Err>;
+  fn max_texture_units(&self) -> Result<Self::Unit, Self::Err>;
 
-  fn max_uniform_buffer_units() -> Result<Self::Unit, Self::Err>;
+  fn max_uniform_buffer_units(&self) -> Result<Self::Unit, Self::Err>;
 }

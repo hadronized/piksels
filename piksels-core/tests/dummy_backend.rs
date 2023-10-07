@@ -336,6 +336,14 @@ impl Backend for DummyBackend {
   ) -> Result<(), Self::Err> {
     Err(DummyBackendError::Unimplemented)
   }
+
+  fn max_texture_units(&self) -> Result<Self::Unit, Self::Err> {
+    Err(DummyBackendError::Unimplemented)
+  }
+
+  fn max_uniform_buffer_units(&self) -> Result<Self::Unit, Self::Err> {
+    Err(Duniform_bufferkendError::Unimplemented)
+  }
 }
 
 #[test]

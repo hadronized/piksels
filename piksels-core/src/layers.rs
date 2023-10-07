@@ -14,7 +14,7 @@ use crate::{
   render_targets::RenderTargets,
   shader::{Shader, Uniform, UniformBuffer},
   texture::Texture,
-  units::Units,
+  units::{UnitBindingPoint, Units},
   vertex_array::VertexArray,
 };
 
@@ -64,11 +64,15 @@ impl<B> Layers<B>
 where
   B: Backend,
 {
-  pub(crate) fn from_cmd_buf(cmd_buf: B::CmdBuf) -> Result<Self, B::Err> {
+  pub(crate) fn from_cmd_buf(
+    cmd_buf: B::CmdBuf,
+    max_texture_units: B::Unit,
+    max_uniform_buffer_units: B::Unit,
+  ) -> Result<Self, B::Err> {
     Ok(Self {
       cmd_buf,
-      texture_units: Units::new(B::max_texture_units()?),
-      uniform_buffer_units: Units::new(B::max_uniform_buffer_units()?),
+      texture_units: Units::new(max_texture_units),
+      uniform_buffer_units: Units::new(max_uniform_buffer_units),
       in_use_stack: Vec::default(),
     })
   }
@@ -87,7 +91,6 @@ where
     ))
   }
 
-  // TODO: clear / idle
   pub fn done(&self) -> Result<(), B::Err> {
     B::cmd_buf_finish(&self.cmd_buf)
   }
@@ -137,7 +140,6 @@ where
     ))
   }
 
-  // TODO: in use / idle
   pub fn done(self) -> Layers<B> {
     Layers::change_layer(
       self.cmd_buf,
@@ -190,7 +192,6 @@ where
     B::cmd_buf_draw_vertex_array(&self.cmd_buf, &vertex_array.raw)
   }
 
-  // TODO: in use / idle
   pub fn done(self) -> RenderTargetsLayer<B> {
     RenderTargetsLayer::change_layer(
       self.cmd_buf,
@@ -206,8 +207,8 @@ pub struct GroupLayerInUse<B>
 where
   B: Backend,
 {
-  in_use_textures: Vec<B::Unit>,
-  in_use_uniform_buffers: Vec<B::Unit>,
+  textures: Vec<UnitBindingPoint<B>>,
+  uniform_buffers: Vec<UnitBindingPoint<B>>,
 }
 
 impl<B> Default for GroupLayerInUse<B>
@@ -216,8 +217,8 @@ where
 {
   fn default() -> Self {
     Self {
-      in_use_textures: Vec::default(),
-      in_use_uniform_buffers: Vec::default(),
+      textures: Vec::default(),
+      uniform_buffers: Vec::default(),
     }
   }
 }
@@ -264,9 +265,10 @@ where
   B: Backend,
   Parent: ChangeLayer<B>,
 {
-  // TODO: in use / idle
   pub fn done(mut self) -> Parent {
+    self.mark_idle_and_clear();
     self.in_use_stack.push(self.in_use);
+
     Parent::change_layer(
       self.cmd_buf,
       self.texture_units,
@@ -274,18 +276,56 @@ where
       self.in_use_stack,
     )
   }
+
+  fn mark_idle_and_clear(&mut self) {
+    self.mark_textures_idle();
+    self.in_use.textures.clear();
+
+    self.mark_uniform_buffers_idle();
+    self.in_use.uniform_buffers.clear();
+  }
+
+  fn mark_textures_idle(&mut self) {
+    for ubp in &self.in_use.textures {
+      if let Some(ref scarce_index) = ubp.current_scarce_index {
+        self
+          .texture_units
+          .idle(ubp.unit.clone(), scarce_index.clone());
+      }
+    }
+  }
+
+  fn mark_uniform_buffers_idle(&mut self) {
+    for ubp in &self.in_use.uniform_buffers {
+      if let Some(ref scarce_index) = ubp.current_scarce_index {
+        self
+          .uniform_buffer_units
+          .idle(ubp.unit.clone(), scarce_index.clone());
+      }
+    }
+  }
 }
 
 impl<B, Parent> GroupLayer<B, Parent>
 where
   B: Backend,
 {
-  pub fn texture(&self, _texture: &Texture<B>) -> Result<(), B::Err> {
-    todo!()
+  pub fn texture(&mut self, texture: &Texture<B>) -> Result<(), B::Err> {
+    let ubp = self.texture_units.get_unit()?;
+
+    B::cmd_buf_bind_texture(&self.cmd_buf, &texture.raw, &ubp.unit)?;
+    self.in_use.textures.push(ubp);
+
+    Ok(())
   }
 
-  pub fn uniform_buffer(&self, _uniform_buffer: &UniformBuffer<B>) -> Result<(), B::Err> {
-    todo!()
+  pub fn uniform_buffer(&mut self, uniform_buffer: &UniformBuffer<B>) -> Result<(), B::Err> {
+    let ubp = self.uniform_buffer_units.get_unit()?;
+
+    B::cmd_buf_bind_uniform_buffer(&self.cmd_buf, &uniform_buffer.raw, &ubp.unit)?;
+    self.in_use.uniform_buffers.push(ubp);
+
+    Ok(())
   }
 }
 

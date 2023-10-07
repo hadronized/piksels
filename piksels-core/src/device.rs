@@ -88,7 +88,10 @@ where
 
   pub fn new_layers(&self) -> Result<Layers<B>, B::Err> {
     let cmd_buf = self.backend.new_cmd_buf()?;
-    Layers::from_cmd_buf(cmd_buf)
+    let max_texture_units = self.backend.max_texture_units()?;
+    let max_uniform_buffer_units = self.backend.max_uniform_buffer_units()?;
+
+    Layers::from_cmd_buf(cmd_buf, max_texture_units, max_uniform_buffer_units)
   }
 
   pub fn new_swap_chain(
