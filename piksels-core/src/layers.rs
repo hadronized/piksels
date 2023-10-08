@@ -184,12 +184,12 @@ impl<B> ShaderLayer<B>
 where
   B: Backend,
 {
-  pub fn set_uniform(&self, uniform: &Uniform<B>, value: *const u8) -> Result<&Self, B::Err> {
+  pub fn set_uniform(self, uniform: &Uniform<B>, value: *const u8) -> Result<Self, B::Err> {
     B::cmd_buf_set_uniform(&self.cmd_buf, &uniform.raw, value)?;
     Ok(self)
   }
 
-  pub fn draw(&self, vertex_array: &VertexArray<B>) -> Result<&Self, B::Err> {
+  pub fn draw(self, vertex_array: &VertexArray<B>) -> Result<Self, B::Err> {
     B::cmd_buf_draw_vertex_array(&self.cmd_buf, &vertex_array.raw)?;
     Ok(self)
   }
@@ -312,40 +312,40 @@ impl<B, Parent> GroupLayer<B, Parent>
 where
   B: Backend,
 {
-  pub fn texture(&mut self, texture: &Texture<B>) -> Result<(), B::Err> {
+  pub fn texture(mut self, texture: &Texture<B>) -> Result<Self, B::Err> {
     let ubp = self.texture_units.get_unit()?;
 
     B::cmd_buf_bind_texture(&self.cmd_buf, &texture.raw, &ubp.unit)?;
     self.in_use.textures.push(ubp);
 
-    Ok(())
+    Ok(self)
   }
 
-  pub fn uniform_buffer(&mut self, uniform_buffer: &UniformBuffer<B>) -> Result<(), B::Err> {
+  pub fn uniform_buffer(mut self, uniform_buffer: &UniformBuffer<B>) -> Result<Self, B::Err> {
     let ubp = self.uniform_buffer_units.get_unit()?;
 
     B::cmd_buf_bind_uniform_buffer(&self.cmd_buf, &uniform_buffer.raw, &ubp.unit)?;
     self.in_use.uniform_buffers.push(ubp);
 
-    Ok(())
+    Ok(self)
   }
 }
 
 /// Operations common to all layers.
-pub trait LayerCommons<B>
+pub trait LayerCommons<B>: Sized
 where
   B: Backend,
 {
-  fn blending(&self, blending: BlendingMode) -> Result<&Self, B::Err>;
-  fn depth_test(&self, depth_test: DepthTest) -> Result<&Self, B::Err>;
-  fn depth_write(&self, depth_write: DepthWrite) -> Result<&Self, B::Err>;
-  fn stencil_test(&self, stencil_test: StencilTest) -> Result<&Self, B::Err>;
-  fn face_culling(&self, face_culling: FaceCulling) -> Result<&Self, B::Err>;
-  fn viewport(&self, viewport: Viewport) -> Result<&Self, B::Err>;
-  fn scissor(&self, scissor: Scissor) -> Result<&Self, B::Err>;
-  fn clear_color(&self, clear_color: impl Into<Option<RGBA>>) -> Result<&Self, B::Err>;
-  fn clear_depth(&self, clear_depth: impl Into<Option<f32>>) -> Result<&Self, B::Err>;
-  fn srgb(&self, srgb: bool) -> Result<&Self, B::Err>;
+  fn blending(self, blending: BlendingMode) -> Result<Self, B::Err>;
+  fn depth_test(self, depth_test: DepthTest) -> Result<Self, B::Err>;
+  fn depth_write(self, depth_write: DepthWrite) -> Result<Self, B::Err>;
+  fn stencil_test(self, stencil_test: StencilTest) -> Result<Self, B::Err>;
+  fn face_culling(self, face_culling: FaceCulling) -> Result<Self, B::Err>;
+  fn viewport(self, viewport: Viewport) -> Result<Self, B::Err>;
+  fn scissor(self, scissor: Scissor) -> Result<Self, B::Err>;
+  fn clear_color(self, clear_color: impl Into<Option<RGBA>>) -> Result<Self, B::Err>;
+  fn clear_depth(self, clear_depth: impl Into<Option<f32>>) -> Result<Self, B::Err>;
+  fn srgb(self, srgb: bool) -> Result<Self, B::Err>;
   fn group(self) -> GroupLayer<B, Self>;
 }
 
@@ -356,52 +356,52 @@ macro_rules! impl_layer_variables {
       where
         B: Backend,
       {
-        fn blending(&self, blending: BlendingMode) -> Result<&Self, B::Err> {
+        fn blending(self, blending: BlendingMode) -> Result<Self, B::Err> {
           B::cmd_buf_blending(&self.cmd_buf, blending)?;
           Ok(self)
         }
 
-        fn depth_test(&self, depth_test: DepthTest) -> Result<&Self, B::Err> {
+        fn depth_test(self, depth_test: DepthTest) -> Result<Self, B::Err> {
           B::cmd_buf_depth_test(&self.cmd_buf, depth_test)?;
           Ok(self)
         }
 
-        fn depth_write(&self, depth_write: DepthWrite) -> Result<&Self, B::Err> {
+        fn depth_write(self, depth_write: DepthWrite) -> Result<Self, B::Err> {
           B::cmd_buf_depth_write(&self.cmd_buf, depth_write)?;
           Ok(self)
         }
 
-        fn stencil_test(&self, stencil_test: StencilTest) -> Result<&Self, B::Err> {
+        fn stencil_test(self, stencil_test: StencilTest) -> Result<Self, B::Err> {
           B::cmd_buf_stencil_test(&self.cmd_buf, stencil_test)?;
           Ok(self)
         }
 
-        fn face_culling(&self, face_culling: FaceCulling) -> Result<&Self, B::Err> {
+        fn face_culling(self, face_culling: FaceCulling) -> Result<Self, B::Err> {
           B::cmd_buf_face_culling(&self.cmd_buf, face_culling)?;
           Ok(self)
         }
 
-        fn viewport(&self, viewport: Viewport) -> Result<&Self, B::Err> {
+        fn viewport(self, viewport: Viewport) -> Result<Self, B::Err> {
           B::cmd_buf_viewport(&self.cmd_buf, viewport)?;
           Ok(self)
         }
 
-        fn scissor(&self, scissor: Scissor) -> Result<&Self, B::Err> {
+        fn scissor(self, scissor: Scissor) -> Result<Self, B::Err> {
           B::cmd_buf_scissor(&self.cmd_buf, scissor)?;
           Ok(self)
         }
 
-        fn clear_color(&self, clear_color: impl Into<Option<RGBA>>) -> Result<&Self, B::Err> {
+        fn clear_color(self, clear_color: impl Into<Option<RGBA>>) -> Result<Self, B::Err> {
           B::cmd_buf_clear_color(&self.cmd_buf, clear_color.into())?;
           Ok(self)
         }
 
-        fn clear_depth(&self, clear_depth: impl Into<Option<f32>>) -> Result<&Self, B::Err> {
+        fn clear_depth(self, clear_depth: impl Into<Option<f32>>) -> Result<Self, B::Err> {
           B::cmd_buf_clear_depth(&self.cmd_buf, clear_depth.into())?;
           Ok(self)
         }
 
-        fn srgb(&self, srgb: bool) -> Result<&Self, B::Err> {
+        fn srgb(self, srgb: bool) -> Result<Self, B::Err> {
           B::cmd_buf_srgb(&self.cmd_buf, srgb)?;
           Ok(self)
         }

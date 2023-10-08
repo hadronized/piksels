@@ -345,6 +345,12 @@ impl Backend for DummyBackend {
     unimplemented!()
   }
 
+  fn swap_chain_render_targets(
+    _swap_chain: &Self::SwapChain,
+  ) -> Result<Self::RenderTargets, Self::Err> {
+    Err(DummyBackendError::Unimplemented)
+  }
+
   fn present_render_targets(
     _swap_chain: &Self::SwapChain,
     _render_targets: &Self::RenderTargets,
