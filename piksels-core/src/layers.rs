@@ -18,6 +18,297 @@ use crate::{
   vertex_array::VertexArray,
 };
 
+pub struct Parent<P, T> {
+  _phantom: PhantomData<*const (P, T)>,
+}
+
+pub struct Layer<B, T>
+where
+  B: Backend,
+{
+  cmd_buf: B::CmdBuf,
+  texture_units: Units<B>,
+  uniform_buffer_units: Units<B>,
+  unused_stack: Vec<InUse<B>>,
+  in_use_stack: Vec<InUse<B>>,
+  in_use: InUse<B>,
+  _phantom: PhantomData<*const T>,
+}
+
+impl<B> Layer<B, ()>
+where
+  B: Backend,
+{
+  pub(crate) fn from_cmd_buf(
+    cmd_buf: B::CmdBuf,
+    max_texture_units: B::Unit,
+    max_uniform_buffer_units: B::Unit,
+  ) -> Self {
+    Self {
+      cmd_buf,
+      texture_units: Units::new(max_texture_units),
+      uniform_buffer_units: Units::new(max_uniform_buffer_units),
+      unused_stack: Vec::default(),
+      in_use_stack: Vec::default(),
+      in_use: InUse::default(),
+      _phantom: PhantomData,
+    }
+  }
+}
+
+impl<B, T> Layer<B, T>
+where
+  B: Backend,
+{
+  fn change_type<Q>(self) -> Layer<B, Q> {
+    Layer {
+      cmd_buf: self.cmd_buf,
+      texture_units: self.texture_units,
+      uniform_buffer_units: self.uniform_buffer_units,
+      unused_stack: self.unused_stack,
+      in_use_stack: self.in_use_stack,
+      in_use: self.in_use,
+      _phantom: PhantomData,
+    }
+  }
+
+  fn deeper<Q>(mut self) -> Layer<B, Parent<Self, Q>> {
+    let in_use = std::mem::replace(
+      &mut self.in_use,
+      self.unused_stack.pop().unwrap_or_default(),
+    );
+    self.in_use_stack.push(in_use);
+    self.change_type()
+  }
+
+  pub fn group(self) -> Layer<B, Parent<Self, ()>> {
+    self.deeper()
+  }
+
+  // TODO: I think we might need to put most of those functions under Layer<B, RenderTargets~>?
+  pub fn blending(self, blending: BlendingMode) -> Result<Self, B::Err> {
+    B::cmd_buf_blending(&self.cmd_buf, blending)?;
+    Ok(self)
+  }
+
+  pub fn depth_test(self, depth_test: DepthTest) -> Result<Self, B::Err> {
+    B::cmd_buf_depth_test(&self.cmd_buf, depth_test)?;
+    Ok(self)
+  }
+
+  pub fn depth_write(self, depth_write: DepthWrite) -> Result<Self, B::Err> {
+    B::cmd_buf_depth_write(&self.cmd_buf, depth_write)?;
+    Ok(self)
+  }
+
+  pub fn stencil_test(self, stencil_test: StencilTest) -> Result<Self, B::Err> {
+    B::cmd_buf_stencil_test(&self.cmd_buf, stencil_test)?;
+    Ok(self)
+  }
+
+  pub fn face_culling(self, face_culling: FaceCulling) -> Result<Self, B::Err> {
+    B::cmd_buf_face_culling(&self.cmd_buf, face_culling)?;
+    Ok(self)
+  }
+
+  pub fn viewport(self, viewport: Viewport) -> Result<Self, B::Err> {
+    B::cmd_buf_viewport(&self.cmd_buf, viewport)?;
+    Ok(self)
+  }
+
+  pub fn scissor(self, scissor: Scissor) -> Result<Self, B::Err> {
+    B::cmd_buf_scissor(&self.cmd_buf, scissor)?;
+    Ok(self)
+  }
+
+  pub fn clear_color(self, clear_color: impl Into<Option<RGBA>>) -> Result<Self, B::Err> {
+    B::cmd_buf_clear_color(&self.cmd_buf, clear_color.into())?;
+    Ok(self)
+  }
+
+  pub fn clear_depth(self, clear_depth: impl Into<Option<f32>>) -> Result<Self, B::Err> {
+    B::cmd_buf_clear_depth(&self.cmd_buf, clear_depth.into())?;
+    Ok(self)
+  }
+
+  pub fn srgb(self, srgb: bool) -> Result<Self, B::Err> {
+    B::cmd_buf_srgb(&self.cmd_buf, srgb)?;
+    Ok(self)
+  }
+
+  pub fn texture(mut self, texture: &Texture<B>) -> Result<Self, B::Err> {
+    let ubp = self.texture_units.get_unit()?;
+
+    B::cmd_buf_bind_texture(&self.cmd_buf, &texture.raw, &ubp.unit)?;
+    self.in_use.textures.push(ubp);
+
+    Ok(self)
+  }
+
+  pub fn uniform_buffer(mut self, uniform_buffer: &UniformBuffer<B>) -> Result<Self, B::Err> {
+    let ubp = self.uniform_buffer_units.get_unit()?;
+
+    B::cmd_buf_bind_uniform_buffer(&self.cmd_buf, &uniform_buffer.raw, &ubp.unit)?;
+    self.in_use.uniform_buffers.push(ubp);
+
+    Ok(self)
+  }
+}
+
+impl<B, P, T> Layer<B, Parent<P, T>>
+where
+  B: Backend,
+{
+  pub fn done(mut self) -> Layer<B, P> {
+    self.mark_idle_and_clear();
+
+    self.unused_stack.push(self.in_use);
+    self.in_use = self.in_use_stack.pop().unwrap_or_default();
+
+    self.change_type()
+  }
+
+  fn mark_idle_and_clear(&mut self) {
+    self.mark_textures_idle();
+    self.in_use.textures.clear();
+
+    self.mark_uniform_buffers_idle();
+    self.in_use.uniform_buffers.clear();
+  }
+
+  fn mark_textures_idle(&mut self) {
+    for ubp in &self.in_use.textures {
+      if let Some(ref scarce_index) = ubp.current_scarce_index {
+        self
+          .texture_units
+          .idle(ubp.unit.clone(), scarce_index.clone());
+      }
+    }
+  }
+
+  fn mark_uniform_buffers_idle(&mut self) {
+    for ubp in &self.in_use.uniform_buffers {
+      if let Some(ref scarce_index) = ubp.current_scarce_index {
+        self
+          .uniform_buffer_units
+          .idle(ubp.unit.clone(), scarce_index.clone());
+      }
+    }
+  }
+}
+
+pub trait LayerTop<B>: Sized
+where
+  B: Backend,
+{
+  fn render_targets(
+    self,
+    render_targets: &RenderTargets<B>,
+  ) -> Result<Layer<B, Parent<Self, RenderTargets<B>>>, B::Err>;
+}
+
+impl<B> LayerTop<B> for Layer<B, ()>
+where
+  B: Backend,
+{
+  fn render_targets(
+    self,
+    render_targets: &RenderTargets<B>,
+  ) -> Result<Layer<B, Parent<Self, RenderTargets<B>>>, B::Err> {
+    B::cmd_buf_bind_render_targets(&self.cmd_buf, &render_targets.raw)?;
+    Ok(self.deeper())
+  }
+}
+
+impl<B, L> LayerTop<B> for Layer<B, Layer<B, L>>
+where
+  B: Backend,
+  L: LayerTop<B>,
+{
+  fn render_targets(
+    self,
+    render_targets: &RenderTargets<B>,
+  ) -> Result<Layer<B, Parent<Self, RenderTargets<B>>>, <B as Backend>::Err> {
+    B::cmd_buf_bind_render_targets(&self.cmd_buf, &render_targets.raw)?;
+    Ok(self.deeper())
+  }
+}
+
+pub trait LayerRenderTargets<B>: Sized
+where
+  B: Backend,
+{
+  fn shader(self, shader: &Shader<B>) -> Result<Layer<B, Parent<Self, ShaderLayer<B>>>, B::Err>;
+}
+
+impl<B> LayerRenderTargets<B> for Layer<B, RenderTargets<B>>
+where
+  B: Backend,
+{
+  fn shader(
+    self,
+    shader: &Shader<B>,
+  ) -> Result<Layer<B, Parent<Self, ShaderLayer<B>>>, <B as Backend>::Err> {
+    B::cmd_buf_bind_shader(&self.cmd_buf, &shader.raw)?;
+    Ok(self.deeper())
+  }
+}
+
+impl<B, L> LayerRenderTargets<B> for Layer<B, Layer<B, L>>
+where
+  B: Backend,
+  L: LayerRenderTargets<B>,
+{
+  fn shader(
+    self,
+    shader: &Shader<B>,
+  ) -> Result<Layer<B, Parent<Self, ShaderLayer<B>>>, <B as Backend>::Err> {
+    B::cmd_buf_bind_shader(&self.cmd_buf, &shader.raw)?;
+    Ok(self.deeper())
+  }
+}
+
+pub trait LayerShader<B>: Sized
+where
+  B: Backend,
+{
+  fn uniform(self, uniform: &Uniform<B>, value: *const u8) -> Result<Self, B::Err>;
+  fn draw(self, vertex_array: &VertexArray<B>) -> Result<Self, B::Err>;
+}
+
+impl<B> LayerShader<B> for Layer<B, Shader<B>>
+where
+  B: Backend,
+{
+  fn uniform(self, uniform: &Uniform<B>, value: *const u8) -> Result<Self, <B as Backend>::Err> {
+    B::cmd_buf_set_uniform(&self.cmd_buf, &uniform.raw, value)?;
+    Ok(self)
+  }
+
+  fn draw(self, vertex_array: &VertexArray<B>) -> Result<Self, <B as Backend>::Err> {
+    B::cmd_buf_draw_vertex_array(&self.cmd_buf, &vertex_array.raw)?;
+    Ok(self)
+  }
+}
+
+impl<B, L> LayerShader<B> for Layer<B, Layer<B, L>>
+where
+  B: Backend,
+  L: LayerShader<B>,
+{
+  fn uniform(self, uniform: &Uniform<B>, value: *const u8) -> Result<Self, <B as Backend>::Err> {
+    B::cmd_buf_set_uniform(&self.cmd_buf, &uniform.raw, value)?;
+    Ok(self)
+  }
+
+  fn draw(self, vertex_array: &VertexArray<B>) -> Result<Self, <B as Backend>::Err> {
+    B::cmd_buf_draw_vertex_array(&self.cmd_buf, &vertex_array.raw)?;
+    Ok(self)
+  }
+}
+
+// ================ OLD CODE
+
 pub trait ChangeLayer<B>
 where
   B: Backend,
@@ -26,7 +317,7 @@ where
     cmd_buf: B::CmdBuf,
     texture_units: Units<B>,
     uniform_buffer_units: Units<B>,
-    in_use_stack: Vec<GroupLayerInUse<B>>,
+    in_use_stack: Vec<InUse<B>>,
   ) -> Self;
 }
 
@@ -38,7 +329,7 @@ where
   cmd_buf: B::CmdBuf,
   texture_units: Units<B>,
   uniform_buffer_units: Units<B>,
-  in_use_stack: Vec<GroupLayerInUse<B>>,
+  in_use_stack: Vec<InUse<B>>,
 }
 
 impl<B> ChangeLayer<B> for Layers<B>
@@ -49,7 +340,7 @@ where
     cmd_buf: B::CmdBuf,
     texture_units: Units<B>,
     uniform_buffer_units: Units<B>,
-    in_use_stack: Vec<GroupLayerInUse<B>>,
+    in_use_stack: Vec<InUse<B>>,
   ) -> Self {
     Self {
       cmd_buf,
@@ -104,7 +395,7 @@ where
   cmd_buf: B::CmdBuf,
   texture_units: Units<B>,
   uniform_buffer_units: Units<B>,
-  in_use_stack: Vec<GroupLayerInUse<B>>,
+  in_use_stack: Vec<InUse<B>>,
 }
 
 impl<B> ChangeLayer<B> for RenderTargetsLayer<B>
@@ -115,7 +406,7 @@ where
     cmd_buf: B::CmdBuf,
     texture_units: Units<B>,
     uniform_buffer_units: Units<B>,
-    in_use_stack: Vec<GroupLayerInUse<B>>,
+    in_use_stack: Vec<InUse<B>>,
   ) -> Self {
     Self {
       cmd_buf,
@@ -158,7 +449,7 @@ where
   cmd_buf: B::CmdBuf,
   texture_units: Units<B>,
   uniform_buffer_units: Units<B>,
-  in_use_stack: Vec<GroupLayerInUse<B>>,
+  in_use_stack: Vec<InUse<B>>,
 }
 
 impl<B> ChangeLayer<B> for ShaderLayer<B>
@@ -169,7 +460,7 @@ where
     cmd_buf: B::CmdBuf,
     texture_units: Units<B>,
     uniform_buffer_units: Units<B>,
-    in_use_stack: Vec<GroupLayerInUse<B>>,
+    in_use_stack: Vec<InUse<B>>,
   ) -> Self {
     Self {
       cmd_buf,
@@ -205,7 +496,7 @@ where
 }
 
 #[derive(Debug)]
-pub struct GroupLayerInUse<B>
+pub struct InUse<B>
 where
   B: Backend,
 {
@@ -213,7 +504,7 @@ where
   uniform_buffers: Vec<UnitBindingPoint<B>>,
 }
 
-impl<B> Default for GroupLayerInUse<B>
+impl<B> Default for InUse<B>
 where
   B: Backend,
 {
@@ -234,8 +525,8 @@ where
   cmd_buf: B::CmdBuf,
   texture_units: Units<B>,
   uniform_buffer_units: Units<B>,
-  in_use: GroupLayerInUse<B>,
-  in_use_stack: Vec<GroupLayerInUse<B>>,
+  in_use: InUse<B>,
+  in_use_stack: Vec<InUse<B>>,
   _phantom: PhantomData<*const Parent>,
 }
 
@@ -247,7 +538,7 @@ where
     cmd_buf: B::CmdBuf,
     texture_units: Units<B>,
     uniform_buffer_units: Units<B>,
-    mut in_use_stack: Vec<GroupLayerInUse<B>>,
+    mut in_use_stack: Vec<InUse<B>>,
   ) -> Self {
     let in_use = in_use_stack.pop().unwrap_or_default();
 
