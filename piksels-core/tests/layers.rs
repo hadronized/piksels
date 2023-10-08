@@ -57,14 +57,14 @@ fn simple_layers() {
       },
     )?;
 
-    // layers
-    let x = layers
+    layers
+      // layers
       .render_targets(&render_targets)?
-      .shader(&shader)?
-      .draw(&foo)?
-      .draw(&bar)?
-      .done()
-      .done()
+        .shader(&shader)?
+          .draw(&foo)?
+          .draw(&bar)?
+          .done()
+        .done()
       .done()?;
 
     Ok(())
