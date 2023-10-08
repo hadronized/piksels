@@ -40,6 +40,26 @@ pub struct UniformType {
   array: Option<usize>,
 }
 
+impl From<UniformTypeBase> for UniformType {
+  fn from(base: UniformTypeBase) -> Self {
+    Self { base, array: None }
+  }
+}
+
+impl UniformType {
+  pub fn new(base: UniformTypeBase, array: impl Into<Option<usize>>) -> Self {
+    Self {
+      base,
+      array: array.into(),
+    }
+  }
+
+  pub fn array(mut self, array: usize) -> Self {
+    self.array = Some(array);
+    self
+  }
+}
+
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum UniformTypeBase {
   Int,

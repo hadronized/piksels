@@ -25,8 +25,12 @@ where
     Self { raw }
   }
 
-  pub fn uniform(&self, name: impl AsRef<str>, ty: UniformType) -> Result<Uniform<B>, B::Err> {
-    B::get_uniform(&self.raw, name.as_ref(), ty).map(|raw| Uniform { raw })
+  pub fn uniform(
+    &self,
+    name: impl AsRef<str>,
+    ty: impl Into<UniformType>,
+  ) -> Result<Uniform<B>, B::Err> {
+    B::get_uniform(&self.raw, name.as_ref(), ty.into()).map(|raw| Uniform { raw })
   }
 
   pub fn uniform_buffer(&self, name: impl AsRef<str>) -> Result<UniformBuffer<B>, B::Err> {

@@ -184,7 +184,7 @@ impl<B> ShaderLayer<B>
 where
   B: Backend,
 {
-  pub fn set_uniform(self, uniform: &Uniform<B>, value: *const u8) -> Result<Self, B::Err> {
+  pub fn uniform(self, uniform: &Uniform<B>, value: *const u8) -> Result<Self, B::Err> {
     B::cmd_buf_set_uniform(&self.cmd_buf, &uniform.raw, value)?;
     Ok(self)
   }

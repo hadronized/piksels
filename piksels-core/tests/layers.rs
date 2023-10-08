@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use piksels_backend::{
-  shader::ShaderSources,
+  shader::{ShaderSources, UniformType, UniformTypeBase},
   swap_chain::SwapChainMode,
   texture::{MagFilter, MinFilter, Sampling, Storage, Wrap},
   vertex_array::{MemoryLayout, VertexArrayData},
@@ -19,6 +19,7 @@ fn simple_layers() {
     let render_targets =
       device.new_render_targets(HashSet::default(), None, Storage::Flat1D { width: 10 })?;
     let shader = device.new_shader(ShaderSources::default())?;
+    let uni_0 = shader.uniform("uni_0", UniformTypeBase::Float)?;
 
     // vertex arrays
     let foo = device.new_vertex_array(
