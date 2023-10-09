@@ -83,9 +83,12 @@ pub trait Backend {
   type Shader: Scarce<Self>;
   type SwapChain: Scarce<Self>;
   type Texture: Scarce<Self>;
+  type TextureBindingPoint: Scarce<Self>;
+  type TextureUnit: Unit;
   type Uniform: Scarce<Self>;
   type UniformBuffer: Scarce<Self>;
-  type Unit: Unit;
+  type UniformBufferBindingPoint: Scarce<Self>;
+  type UniformBufferUnit: Unit;
   type VertexArray: Scarce<Self>;
 
   /// Backend author.
@@ -155,17 +158,23 @@ pub trait Backend {
     ty: UniformType,
   ) -> Result<Self::Uniform, Self::Err>;
 
-  /// Drop a [`Uniform`].
-  fn drop_uniform(uniform: &Self::Uniform);
-
   /// Create a new [`UniformBuffer`].
   fn get_uniform_buffer(
     shader: &Self::Shader,
     name: &str,
   ) -> Result<Self::UniformBuffer, Self::Err>;
 
-  /// Drop a [`UniformBuffer`].
-  fn drop_uniform_buffer(uniform_buffer: &Self::UniformBuffer);
+  /// Get a texture binding point from a shader.
+  fn get_texture_binding_point(
+    shader: &Self::Shader,
+    name: &str,
+  ) -> Result<Self::TextureBindingPoint, Self::Err>;
+
+  /// Get a uniform buffer binding point from a shader.
+  fn get_uniform_buffer_binding_point(
+    shader: &Self::Shader,
+    name: &str,
+  ) -> Result<Self::UniformBufferBindingPoint, Self::Err>;
 
   fn new_texture(&self, storage: Storage, sampling: Sampling) -> Result<Self::Texture, Self::Err>;
 
@@ -228,16 +237,32 @@ pub trait Backend {
     value: *const u8,
   ) -> Result<(), Self::Err>;
 
+  /// Bind a texture to a unit.
   fn cmd_buf_bind_texture(
     cmd_buf: &Self::CmdBuf,
     texture: &Self::Texture,
-    unit: &Self::Unit,
+    unit: &Self::TextureUnit,
   ) -> Result<(), Self::Err>;
 
+  /// Bind a texture unit to a texture binding point.
+  fn cmd_buf_bind_texture_unit(
+    cmd_buf: &Self::CmdBuf,
+    unit: &Self::TextureUnit,
+    binding_point: &Self::TextureBindingPoint,
+  ) -> Result<(), Self::Err>;
+
+  /// Bind a uniform buffer to a unit.
   fn cmd_buf_bind_uniform_buffer(
     cmd_buf: &Self::CmdBuf,
     uniform_buffer: &Self::UniformBuffer,
-    unit: &Self::Unit,
+    unit: &Self::UniformBufferUnit,
+  ) -> Result<(), Self::Err>;
+
+  /// Bind a uniform buffer unit to a uniform buffer binding point.
+  fn cmd_buf_bind_uniform_buffer_unit(
+    cmd_buf: &Self::CmdBuf,
+    unit: &Self::UniformBufferUnit,
+    binding_point: &Self::UniformBufferBindingPoint,
   ) -> Result<(), Self::Err>;
 
   fn cmd_buf_bind_render_targets(
@@ -272,7 +297,7 @@ pub trait Backend {
     render_targets: &Self::RenderTargets,
   ) -> Result<(), Self::Err>;
 
-  fn max_texture_units(&self) -> Result<Self::Unit, Self::Err>;
+  fn max_texture_units(&self) -> Result<Self::TextureUnit, Self::Err>;
 
-  fn max_uniform_buffer_units(&self) -> Result<Self::Unit, Self::Err>;
+  fn max_uniform_buffer_units(&self) -> Result<Self::UniformBufferUnit, Self::Err>;
 }

@@ -1,3 +1,4 @@
+// FIXME: I think this should be part of piksels, not piksels-core
 //! Units and binding points for indexed scarce resources, such as textures and uniform buffers.
 
 use std::collections::HashMap;
@@ -5,20 +6,22 @@ use std::collections::HashMap;
 use piksels_backend::{error::Error, Backend, Unit};
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct Units<B>
+pub struct Units<B, U>
 where
   B: Backend,
+  U: Unit,
 {
-  next_unit: B::Unit,
-  max_units: B::Unit,
-  idle_units: HashMap<B::Unit, B::ScarceIndex>,
+  next_unit: U,
+  max_units: U,
+  idle_units: HashMap<U, B::ScarceIndex>,
 }
 
-impl<B> Units<B>
+impl<B, U> Units<B, U>
 where
   B: Backend,
+  U: Unit,
 {
-  pub fn new(max_unit: B::Unit) -> Self {
+  pub fn new(max_unit: U) -> Self {
     Self {
       next_unit: Default::default(),
       max_units: max_unit,
@@ -27,7 +30,7 @@ where
   }
 
   /// Get a unit to bind to.
-  pub fn get_unit(&mut self) -> Result<UnitBindingPoint<B>, B::Err> {
+  pub fn get_unit(&mut self) -> Result<UnitBindingPoint<B, U>, B::Err> {
     if self.next_unit < self.max_units {
       // we still can use a fresh unit
       let unit = self.next_unit.clone();
@@ -45,7 +48,7 @@ where
 
   /// Try to reuse a binding. Return [`None`] if no binding is available, or a [`UnitBindingPoint`] mapping a unit
   /// with the currently bound scarce resource index otherwise.
-  fn reuse_unit(&mut self) -> Option<UnitBindingPoint<B>> {
+  fn reuse_unit(&mut self) -> Option<UnitBindingPoint<B, U>> {
     let unit = self.idle_units.keys().next().cloned()?;
     let current_scarce_index = self.idle_units.remove(&unit)?;
 
@@ -56,23 +59,24 @@ where
   }
 
   /// Mark a unit as idle.
-  pub fn idle(&mut self, unit: B::Unit, scarce_index: B::ScarceIndex) {
+  pub fn idle(&mut self, unit: U, scarce_index: B::ScarceIndex) {
     self.idle_units.insert(unit, scarce_index);
   }
 
   /// Mark a unit as non-idle (in-use).
-  pub fn in_use(&mut self, unit: B::Unit) {
+  pub fn in_use(&mut self, unit: U) {
     self.idle_units.remove(&unit);
   }
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct UnitBindingPoint<B>
+pub struct UnitBindingPoint<B, U>
 where
   B: Backend,
+  U: Unit,
 {
   /// Unit the binding point refers to.
-  pub(crate) unit: B::Unit,
+  pub(crate) unit: U,
 
   /// Currently bound resource; [`None`] if no resource is bound to this unit.
   pub(crate) current_scarce_index: Option<B::ScarceIndex>,

@@ -4,6 +4,14 @@ use piksels_backend::{
 };
 
 #[derive(Debug, Eq, PartialEq)]
+pub struct TextureUnit<B>
+where
+  B: Backend,
+{
+  pub(crate) raw: B::TextureUnit,
+}
+
+#[derive(Debug, Eq, PartialEq)]
 pub struct Texture<B>
 where
   B: Backend,

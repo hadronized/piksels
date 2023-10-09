@@ -1,5 +1,5 @@
 use piksels_backend::{
-  blending::{Blending, BlendingMode},
+  blending::BlendingMode,
   color::RGBA,
   depth_stencil::{DepthTest, DepthWrite, StencilTest},
   face_culling::FaceCulling,
@@ -10,7 +10,11 @@ use piksels_backend::{
 
 use crate::{
   render_targets::RenderTargets,
-  shader::{Shader, Uniform},
+  shader::{
+    Shader, TextureBindingPoint, Uniform, UniformBuffer, UniformBufferBindingPoint,
+    UniformBufferUnit,
+  },
+  texture::{Texture, TextureUnit},
 };
 
 #[derive(Debug, Eq, PartialEq)]
@@ -93,8 +97,41 @@ where
     Ok(self)
   }
 
-  // TODO: uniform binding points
-  // TODO: uniform buffer binding points
+  /// Mark a texture as being active.
+  pub fn texture(&self, texture: &Texture<B>, unit: &TextureUnit<B>) -> Result<&Self, B::Err> {
+    B::cmd_buf_bind_texture(&self.raw, &texture.raw, &unit.raw)?;
+    Ok(self)
+  }
+
+  /// Connect a texture unit to a texture binding point.
+  pub fn texture_binding_point(
+    &self,
+    unit: &TextureUnit<B>,
+    binding_point: &TextureBindingPoint<B>,
+  ) -> Result<&Self, B::Err> {
+    B::cmd_buf_bind_texture_unit(&self.raw, &unit.raw, &binding_point.raw)?;
+    Ok(self)
+  }
+
+  /// Mark a uniform buffer as being active.
+  pub fn uniform_buffer(
+    &self,
+    uniform_buffer: &UniformBuffer<B>,
+    unit: &UniformBufferUnit<B>,
+  ) -> Result<&Self, B::Err> {
+    B::cmd_buf_bind_uniform_buffer(&self.raw, &uniform_buffer.raw, &unit.raw)?;
+    Ok(self)
+  }
+
+  /// Connect a uniform buffer unit to a uniform buffer binding point.
+  pub fn uniform_buffer_binding_point(
+    &self,
+    unit: &UniformBufferUnit<B>,
+    binding_point: &UniformBufferBindingPoint<B>,
+  ) -> Result<&Self, B::Err> {
+    B::cmd_buf_bind_uniform_buffer_unit(&self.raw, &unit.raw, &binding_point.raw)?;
+    Ok(self)
+  }
 
   pub fn render_targets(&self, render_targets: &RenderTargets<B>) -> Result<&Self, B::Err> {
     B::cmd_buf_bind_render_targets(&self.raw, &render_targets.raw)?;

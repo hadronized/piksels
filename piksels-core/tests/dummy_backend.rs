@@ -60,9 +60,12 @@ impl Backend for DummyBackend {
   type Shader = DummyResource;
   type SwapChain = DummyResource;
   type Texture = DummyResource;
+  type TextureBindingPoint = DummyResource;
+  type TextureUnit = DummyUnit;
   type Uniform = DummyResource;
   type UniformBuffer = DummyResource;
-  type Unit = DummyUnit;
+  type UniformBufferBindingPoint = DummyResource;
+  type UniformBufferUnit = DummyUnit;
   type VertexArray = DummyResource;
 
   fn author(&self) -> Result<String, Self::Err> {
@@ -158,19 +161,25 @@ impl Backend for DummyBackend {
     Err(DummyBackendError::Unimplemented)
   }
 
-  fn drop_uniform(_uniform: &Self::Uniform) {
-    unimplemented!()
-  }
-
   fn get_uniform_buffer(
-    _nhader: &Self::Shader,
-    _same: &str,
+    _shader: &Self::Shader,
+    _name: &str,
   ) -> Result<Self::UniformBuffer, Self::Err> {
     Err(DummyBackendError::Unimplemented)
   }
 
-  fn drop_uniform_buffer(_uniform_buffer: &Self::UniformBuffer) {
-    unimplemented!()
+  fn get_texture_binding_point(
+    _shader: &Self::Shader,
+    _name: &str,
+  ) -> Result<Self::TextureBindingPoint, Self::Err> {
+    Err(DummyBackendError::Unimplemented)
+  }
+
+  fn get_uniform_buffer_binding_point(
+    _shader: &Self::Shader,
+    _name: &str,
+  ) -> Result<Self::UniformBufferBindingPoint, Self::Err> {
+    Err(DummyBackendError::Unimplemented)
   }
 
   fn new_texture(
@@ -297,7 +306,15 @@ impl Backend for DummyBackend {
   fn cmd_buf_bind_texture(
     _cmd_buf: &Self::CmdBuf,
     _texture: &Self::Texture,
-    _unit: &Self::Unit,
+    _unit: &Self::TextureUnit,
+  ) -> Result<(), Self::Err> {
+    Err(DummyBackendError::Unimplemented)
+  }
+
+  fn cmd_buf_bind_texture_unit(
+    _cmd_buf: &Self::CmdBuf,
+    _unit: &Self::TextureUnit,
+    _binding_point: &Self::TextureBindingPoint,
   ) -> Result<(), Self::Err> {
     Err(DummyBackendError::Unimplemented)
   }
@@ -305,7 +322,15 @@ impl Backend for DummyBackend {
   fn cmd_buf_bind_uniform_buffer(
     _cmd_buf: &Self::CmdBuf,
     _uniform_buffer: &Self::Texture,
-    _unit: &Self::Unit,
+    _unit: &Self::UniformBufferUnit,
+  ) -> Result<(), Self::Err> {
+    Err(DummyBackendError::Unimplemented)
+  }
+
+  fn cmd_buf_bind_uniform_buffer_unit(
+    _cmd_buf: &Self::CmdBuf,
+    _unit: &Self::UniformBufferUnit,
+    _binding_point: &Self::UniformBufferBindingPoint,
   ) -> Result<(), Self::Err> {
     Err(DummyBackendError::Unimplemented)
   }
@@ -358,11 +383,11 @@ impl Backend for DummyBackend {
     Err(DummyBackendError::Unimplemented)
   }
 
-  fn max_texture_units(&self) -> Result<Self::Unit, Self::Err> {
+  fn max_texture_units(&self) -> Result<Self::TextureUnit, Self::Err> {
     Err(DummyBackendError::Unimplemented)
   }
 
-  fn max_uniform_buffer_units(&self) -> Result<Self::Unit, Self::Err> {
+  fn max_uniform_buffer_units(&self) -> Result<Self::UniformBufferUnit, Self::Err> {
     Err(DummyBackendError::Unimplemented)
   }
 }

@@ -36,6 +36,21 @@ where
   pub fn uniform_buffer(&self, name: impl AsRef<str>) -> Result<UniformBuffer<B>, B::Err> {
     B::get_uniform_buffer(&self.raw, name.as_ref()).map(|raw| UniformBuffer { raw })
   }
+
+  pub fn texture_binding_point(
+    &self,
+    name: impl AsRef<str>,
+  ) -> Result<TextureBindingPoint<B>, B::Err> {
+    B::get_texture_binding_point(&self.raw, name.as_ref()).map(|raw| TextureBindingPoint { raw })
+  }
+
+  pub fn uniform_buffer_binding_point(
+    &self,
+    name: impl AsRef<str>,
+  ) -> Result<UniformBufferBindingPoint<B>, B::Err> {
+    B::get_uniform_buffer_binding_point(&self.raw, name.as_ref())
+      .map(|raw| UniformBufferBindingPoint { raw })
+  }
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -46,15 +61,6 @@ where
   pub(crate) raw: B::Uniform,
 }
 
-impl<B> Drop for Uniform<B>
-where
-  B: Backend,
-{
-  fn drop(&mut self) {
-    B::drop_uniform(&self.raw);
-  }
-}
-
 #[derive(Debug, Eq, PartialEq)]
 pub struct UniformBuffer<B>
 where
@@ -63,11 +69,26 @@ where
   pub(crate) raw: B::UniformBuffer,
 }
 
-impl<B> Drop for UniformBuffer<B>
+#[derive(Debug, Eq, PartialEq)]
+pub struct UniformBufferUnit<B>
 where
   B: Backend,
 {
-  fn drop(&mut self) {
-    B::drop_uniform_buffer(&self.raw);
-  }
+  pub(crate) raw: B::UniformBufferUnit,
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub struct UniformBufferBindingPoint<B>
+where
+  B: Backend,
+{
+  pub(crate) raw: B::UniformBufferBindingPoint,
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub struct TextureBindingPoint<B>
+where
+  B: Backend,
+{
+  pub(crate) raw: B::TextureBindingPoint,
 }
