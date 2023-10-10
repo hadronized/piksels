@@ -7,7 +7,7 @@
 
 use std::collections::HashMap;
 
-use crate::{
+use piksels_backend::{
   blending::{Equation, Factor},
   color::RGBA32F,
   depth_stencil::{Comparison, DepthWrite, StencilFunc},

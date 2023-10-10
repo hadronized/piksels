@@ -36,7 +36,6 @@ macro_rules! mk_bckd_type_getters {
 }
 
 pub mod blending;
-pub mod cache;
 pub mod color;
 pub mod depth_stencil;
 pub mod error;

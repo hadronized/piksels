@@ -1,3 +1,4 @@
+pub mod cache;
 pub mod cmd_buf;
 pub mod device;
 pub mod render_targets;
