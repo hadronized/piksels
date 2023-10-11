@@ -111,6 +111,37 @@ where
   }
 }
 
+impl<B> Drop for Cache<B>
+where
+  B: Backend,
+{
+  fn drop(&mut self) {
+    for vertex_array in self.vertex_arrays.values() {
+      B::drop_vertex_array(vertex_array);
+    }
+
+    for render_targets in self.render_targets.values() {
+      B::drop_render_targets(render_targets);
+    }
+
+    for shader in self.shaders.values() {
+      B::drop_shader(shader);
+    }
+
+    for texture in self.textures.values() {
+      B::drop_texture(texture);
+    }
+
+    for cmd_buf in self.cmd_bufs.values() {
+      B::drop_cmd_buf(cmd_buf);
+    }
+
+    for swap_chain in self.swap_chains.values() {
+      B::drop_swap_chain(swap_chain);
+    }
+  }
+}
+
 macro_rules! cache_methods_scarce_resource {
   ($(track = $track:ident, untrack = $untrack:ident $(, drop = $drop:ident)? ($map:ident : $ty:ident)),* $(,)?) => {
     $(

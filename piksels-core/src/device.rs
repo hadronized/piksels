@@ -1,6 +1,9 @@
 use std::{
   collections::HashSet,
-  sync::{Arc, Mutex},
+  sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc, Mutex,
+  },
 };
 
 use piksels_backend::{
@@ -24,6 +27,17 @@ where
 {
   backend: B,
   cache: Arc<Mutex<Cache<B>>>,
+  active: Arc<AtomicBool>,
+}
+
+impl<B> Drop for Device<B>
+where
+  B: Backend,
+{
+  fn drop(&mut self) {
+    // this prevents backend scarce resources to be dropped while we don’t have the backend anymore
+    self.active.store(false, Ordering::Relaxed);
+  }
 }
 
 macro_rules! cache_options {
@@ -60,7 +74,13 @@ where
 
   pub fn new(backend: B) -> Self {
     let cache = Arc::new(Mutex::new(Cache::default()));
-    Self { backend, cache }
+    let active = Arc::new(AtomicBool::new(true));
+
+    Self {
+      backend,
+      cache,
+      active,
+    }
   }
 
   pub fn new_vertex_array(
