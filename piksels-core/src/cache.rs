@@ -32,6 +32,7 @@ where
   uniform_buffers: HashMap<B::ScarceIndex, B::UniformBuffer>,
   textures: HashMap<B::ScarceIndex, B::Texture>,
   cmd_bufs: HashMap<B::ScarceIndex, B::CmdBuf>,
+  swap_chains: HashMap<B::ScarceIndex, B::SwapChain>,
 
   // pipeline variables
   viewport: Cached<Viewport>,
@@ -56,11 +57,11 @@ where
   bound_render_targets: Cached<B::RenderTargets>,
   bound_shader: Cached<B::Shader>,
   srgb: Cached<bool>,
-  author: Cached<String>,
-  name: Cached<String>,
-  version: Cached<String>,
-  shading_lang_version: Cached<String>,
-  info: Cached<BackendInfo>,
+  author: Option<String>,
+  name: Option<String>,
+  version: Option<String>,
+  shading_lang_version: Option<String>,
+  info: Option<BackendInfo>,
 }
 
 impl<B> Default for Cache<B>
@@ -78,6 +79,7 @@ where
       uniform_buffers: Default::default(),
       textures: Default::default(),
       cmd_bufs: Default::default(),
+      swap_chains: Default::default(),
       viewport: Default::default(),
       clear_color: Default::default(),
       clear_depth: Default::default(),
@@ -110,7 +112,7 @@ where
 }
 
 macro_rules! cache_methods_scarce_resource {
-  ($(track = $track:ident, untrack = $untrack:ident ($map:ident : $ty:ident)),* $(,)?) => {
+  ($(track = $track:ident, untrack = $untrack:ident $(, drop = $drop:ident)? ($map:ident : $ty:ident)),* $(,)?) => {
     $(
       pub fn $track(&mut self, res: &B::$ty) {
         self.$map.insert(res.scarce_index(), res.scarce_clone());
@@ -118,6 +120,7 @@ macro_rules! cache_methods_scarce_resource {
 
       pub fn $untrack(&mut self, res: &B::$ty) {
         self.$map.remove(&res.scarce_index());
+        $(B::$drop(res);)?
       }
     )*
   };
@@ -138,15 +141,16 @@ where
   B: Backend,
 {
   cache_methods_scarce_resource!(
-    track = track_vertex_array, untrack = untrack_vertex_array (vertex_arrays: VertexArray),
-    track = track_render_targets, untrack = untrack_render_targets (render_targets: RenderTargets),
+    track = track_vertex_array, untrack = untrack_vertex_array, drop = drop_vertex_array (vertex_arrays: VertexArray),
+    track = track_render_targets, untrack = untrack_render_targets, drop = drop_render_targets (render_targets: RenderTargets),
     track = track_color_attachment, untrack = untrack_color_attachment (color_attachments: ColorAttachment),
     track = track_depth_stencil_attachment, untrack = untrack_depth_stencil_attachment (depth_stencil_attachments: DepthStencilAttachment),
-    track = track_shader, untrack = untrack_shader (shaders: Shader),
+    track = track_shader, untrack = untrack_shader, drop = drop_shader (shaders: Shader),
     track = track_uniform, untrack = untrack_uniform (uniforms: Uniform),
     track = track_uniform_buffer, untrack = untrack_uniform_buffer (uniform_buffers: UniformBuffer),
-    track = track_texture, untrack = untrack_texture (textures: Texture),
-    track = track_cmd_buf, untrack = untrack_cmd_buf (cmd_bufs: CmdBuf),
+    track = track_texture, untrack = untrack_texture, drop = drop_texture (textures: Texture),
+    track = track_cmd_buf, untrack = untrack_cmd_buf, drop = drop_cmd_buf (cmd_bufs: CmdBuf),
+    track = track_swap_chain, untrack = untrack_swap_chain, drop = drop_swap_chain (swap_chains: SwapChain),
   );
 
   cache_methods_pipeline_vars!(
@@ -173,12 +177,27 @@ where
     bound_render_targets: B::RenderTargets,
     bound_shader: B::Shader,
     srgb: bool,
-    author: String,
-    name: String,
-    version: String,
-    shading_lang_version: String,
-    info: BackendInfo,
   );
+
+  pub fn author(&mut self) -> &mut Option<String> {
+    &mut self.author
+  }
+
+  pub fn name(&mut self) -> &mut Option<String> {
+    &mut self.name
+  }
+
+  pub fn version(&mut self) -> &mut Option<String> {
+    &mut self.version
+  }
+
+  pub fn shading_lang_version(&mut self) -> &mut Option<String> {
+    &mut self.shading_lang_version
+  }
+
+  pub fn info(&mut self) -> &mut Option<BackendInfo> {
+    &mut self.info
+  }
 }
 
 impl<B> Cache<B> where B: Backend {}
@@ -231,6 +250,11 @@ where
         true
       }
     }
+  }
+
+  /// Check whether a value is cached, whatever it is.
+  pub fn exists(&self) -> bool {
+    self.0.is_some()
   }
 
   /// Check whether the cached value is invalid regarding a value.

@@ -1,3 +1,5 @@
+use std::sync::PoisonError;
+
 use thiserror::Error;
 
 /// Backend common errors.
@@ -8,4 +10,13 @@ use thiserror::Error;
 pub enum Error {
   #[error("no more units available on device")]
   NoMoreUnits,
+
+  #[error("thread is poisoned")]
+  PoisonedThread,
+}
+
+impl<T> From<PoisonError<T>> for Error {
+  fn from(_: PoisonError<T>) -> Self {
+    Error::PoisonedThread
+  }
 }
