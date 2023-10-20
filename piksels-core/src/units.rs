@@ -1,4 +1,3 @@
-// FIXME: I think this should be part of piksels, not piksels-core
 //! Units and binding points for indexed scarce resources, such as textures and uniform buffers.
 
 use std::collections::HashMap;
