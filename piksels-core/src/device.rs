@@ -73,7 +73,7 @@ where
   );
 
   pub fn new(backend: B) -> Self {
-    let cache = Arc::new(Mutex::new(Cache::default()));
+    let cache = Arc::new(Mutex::new(Cache::new(&backend)));
     let active = Arc::new(AtomicBool::new(true));
 
     Self {
@@ -157,7 +157,10 @@ where
   }
 
   pub fn new_cmd_buf(&self) -> Result<CmdBuf<B>, B::Err> {
-    let cmd_buf = self.backend.new_cmd_buf().map(CmdBuf::from_raw)?;
+    let cmd_buf = self
+      .backend
+      .new_cmd_buf()
+      .map(|cmd_buf| CmdBuf::from_raw(cmd_buf, self.cache.clone()))?;
 
     self
       .cache

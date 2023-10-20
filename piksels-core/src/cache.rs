@@ -8,14 +8,16 @@
 use std::collections::HashMap;
 
 use piksels_backend::{
-  blending::{Equation, Factor},
+  blending::BlendingMode,
   color::RGBA32F,
-  depth_stencil::{Comparison, DepthWrite, StencilFunc},
-  face_culling::{FaceCullingFace, FaceCullingOrder},
-  scissor::ScissorRegion,
+  depth_stencil::{DepthTest, DepthWrite, StencilTest},
+  face_culling::FaceCulling,
+  scissor::Scissor,
   viewport::Viewport,
   Backend, BackendInfo, Scarce,
 };
+
+use crate::units::Units;
 
 #[derive(Debug)]
 pub struct Cache<B>
@@ -39,76 +41,30 @@ where
   clear_color: Cached<RGBA32F>,
   clear_depth: Cached<f32>,
   clear_stencil: Cached<i32>,
-  blending_state: Cached<bool>,
-  blending_equations: Cached<[Equation; 2]>,
-  blending_factors: Cached<[Factor; 4]>,
-  depth_test: Cached<bool>,
-  depth_test_comparison: Cached<Comparison>,
+  blending: Cached<BlendingMode>,
+  depth_test: Cached<DepthTest>,
   depth_write: Cached<DepthWrite>,
-  stencil_test: Cached<bool>,
-  stencil_func: Cached<StencilFunc>,
-  face_culling: Cached<bool>,
-  face_culling_order: Cached<FaceCullingOrder>,
-  face_culling_face: Cached<FaceCullingFace>,
-  scissor: Cached<bool>,
-  scissor_region: Cached<ScissorRegion>,
+  stencil_test: Cached<StencilTest>,
+  face_culling: Cached<FaceCulling>,
+  srgb: Cached<bool>,
+  scissor: Cached<Scissor>,
   primitive_restart: Cached<bool>,
-  bound_uniform_buffer: Cached<B::UniformBuffer>,
+  // texture support
+  texture_units: Units<B, B::TextureUnit>,
+  bound_textures: HashMap<B::ScarceIndex, B::TextureUnit>,
+  // uniform buffer support
+  uniform_buffer_units: Units<B, B::UniformBufferUnit>,
+  bound_uniform_buffers: HashMap<B::ScarceIndex, B::UniformBufferUnit>,
+  // pipeline resources (render targets, shaders)
   bound_render_targets: Cached<B::RenderTargets>,
   bound_shader: Cached<B::Shader>,
-  srgb: Cached<bool>,
+  // query info; not properly “cached” — instead they are more likely either never queried, or queried once and kept
+  // around for ever
   author: Option<String>,
   name: Option<String>,
   version: Option<String>,
   shading_lang_version: Option<String>,
   info: Option<BackendInfo>,
-}
-
-impl<B> Default for Cache<B>
-where
-  B: Backend,
-{
-  fn default() -> Self {
-    Self {
-      vertex_arrays: Default::default(),
-      render_targets: Default::default(),
-      color_attachments: Default::default(),
-      depth_stencil_attachments: Default::default(),
-      shaders: Default::default(),
-      uniforms: Default::default(),
-      uniform_buffers: Default::default(),
-      textures: Default::default(),
-      cmd_bufs: Default::default(),
-      swap_chains: Default::default(),
-      viewport: Default::default(),
-      clear_color: Default::default(),
-      clear_depth: Default::default(),
-      clear_stencil: Default::default(),
-      blending_state: Default::default(),
-      blending_equations: Default::default(),
-      blending_factors: Default::default(),
-      depth_test: Default::default(),
-      depth_test_comparison: Default::default(),
-      depth_write: Default::default(),
-      stencil_test: Default::default(),
-      stencil_func: Default::default(),
-      face_culling: Default::default(),
-      face_culling_order: Default::default(),
-      face_culling_face: Default::default(),
-      scissor: Default::default(),
-      scissor_region: Default::default(),
-      primitive_restart: Default::default(),
-      bound_uniform_buffer: Default::default(),
-      bound_render_targets: Default::default(),
-      bound_shader: Default::default(),
-      srgb: Default::default(),
-      author: Default::default(),
-      name: Default::default(),
-      version: Default::default(),
-      shading_lang_version: Default::default(),
-      info: Default::default(),
-    }
-  }
 }
 
 impl<B> Drop for Cache<B>
@@ -190,25 +146,55 @@ where
 
     clear_depth: f32,
     clear_stencil: i32,
-    blending_state: bool,
-    blending_equations: [Equation; 2],
-    blending_factors: [Factor; 4],
-    depth_test: bool,
-    depth_test_comparison: Comparison,
+    blending: BlendingMode,
+    depth_test: DepthTest,
     depth_write: DepthWrite,
-    stencil_test: bool,
-    stencil_func: StencilFunc,
-    face_culling: bool,
-    face_culling_order: FaceCullingOrder,
-    face_culling_face: FaceCullingFace,
-    scissor: bool,
-    scissor_region: ScissorRegion,
+    stencil_test: StencilTest,
+    face_culling: FaceCulling,
+    srgb: bool,
+    scissor: Scissor,
     primitive_restart: bool,
-    bound_uniform_buffer: B::UniformBuffer,
     bound_render_targets: B::RenderTargets,
     bound_shader: B::Shader,
-    srgb: bool,
   );
+
+  pub fn new(backend: &B) -> Result<Self, B::Err> {
+    Ok(Self {
+      vertex_arrays: Default::default(),
+      render_targets: Default::default(),
+      color_attachments: Default::default(),
+      depth_stencil_attachments: Default::default(),
+      shaders: Default::default(),
+      uniforms: Default::default(),
+      uniform_buffers: Default::default(),
+      textures: Default::default(),
+      cmd_bufs: Default::default(),
+      swap_chains: Default::default(),
+      viewport: Default::default(),
+      clear_color: Default::default(),
+      clear_depth: Default::default(),
+      clear_stencil: Default::default(),
+      blending: Default::default(),
+      depth_test: Default::default(),
+      depth_write: Default::default(),
+      stencil_test: Default::default(),
+      face_culling: Default::default(),
+      srgb: Default::default(),
+      scissor: Default::default(),
+      primitive_restart: Default::default(),
+      texture_units: Units::new(backend.max_texture_units()?),
+      bound_textures: HashMap::default(),
+      uniform_buffer_units: Units::new(backend.max_uniform_buffer_units()?),
+      bound_uniform_buffers: HashMap::default(),
+      bound_render_targets: Default::default(),
+      bound_shader: Default::default(),
+      author: Default::default(),
+      name: Default::default(),
+      version: Default::default(),
+      shading_lang_version: Default::default(),
+      info: Default::default(),
+    })
+  }
 
   pub fn author(&mut self) -> &mut Option<String> {
     &mut self.author
@@ -254,7 +240,7 @@ impl<T> Default for Cached<T> {
 
 impl<T> Cached<T>
 where
-  T: PartialEq,
+  T: PartialEq + Clone,
 {
   /// Explicitly invalidate a value.
   pub fn invalidate(&mut self) {
@@ -271,14 +257,17 @@ where
   /// If the value was still valid, returns `true`.
   ///
   /// See more: [`Cached::is_invalid`].
-  pub fn set_if_invalid(&mut self, value: T, f: impl FnOnce()) -> bool {
+  pub fn set_if_invalid<E>(
+    &mut self,
+    value: &T,
+    f: impl FnOnce() -> Result<(), E>,
+  ) -> Result<bool, E> {
     match self.0 {
-      Some(ref x) if x == &value => false,
+      Some(ref x) if x == value => Ok(false),
 
       _ => {
-        self.0 = Some(value);
-        f();
-        true
+        self.0 = Some(value.clone());
+        f().map(|_| true)
       }
     }
   }

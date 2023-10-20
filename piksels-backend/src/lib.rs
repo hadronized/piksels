@@ -5,7 +5,7 @@ use std::{
 };
 
 use blending::BlendingMode;
-use color::RGBA;
+use color::RGBA32F;
 use depth_stencil::{DepthTest, DepthWrite, StencilTest};
 use error::Error;
 use face_culling::FaceCulling;
@@ -220,20 +220,16 @@ pub trait Backend {
 
   fn cmd_buf_scissor(cmd_buf: &Self::CmdBuf, scissor: Scissor) -> Result<(), Self::Err>;
 
-  fn cmd_buf_clear_color(
-    cmd_buf: &Self::CmdBuf,
-    clear_color: Option<RGBA>,
-  ) -> Result<(), Self::Err>;
+  fn cmd_buf_clear_color(cmd_buf: &Self::CmdBuf, clear_color: RGBA32F) -> Result<(), Self::Err>;
 
-  fn cmd_buf_clear_depth(cmd_buf: &Self::CmdBuf, clear_depth: Option<f32>)
-    -> Result<(), Self::Err>;
+  fn cmd_buf_clear_depth(cmd_buf: &Self::CmdBuf, clear_depth: f32) -> Result<(), Self::Err>;
 
   fn cmd_buf_srgb(cmd_buf: &Self::CmdBuf, srgb: bool) -> Result<(), Self::Err>;
 
   fn cmd_buf_set_uniform(
     cmd_buf: &Self::CmdBuf,
     uniform: &Self::Uniform,
-    value: *const u8,
+    value: *const u8, // TODO: type with UniformValue trait
   ) -> Result<(), Self::Err>;
 
   /// Bind a texture to a unit.

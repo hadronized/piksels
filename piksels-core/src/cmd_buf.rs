@@ -1,6 +1,8 @@
+use std::sync::{Arc, Mutex};
+
 use piksels_backend::{
   blending::BlendingMode,
-  color::RGBA,
+  color::RGBA32F,
   depth_stencil::{DepthTest, DepthWrite, StencilTest},
   face_culling::FaceCulling,
   scissor::Scissor,
@@ -9,6 +11,7 @@ use piksels_backend::{
 };
 
 use crate::{
+  cache::Cache,
   render_targets::RenderTargets,
   shader::{
     Shader, TextureBindingPoint, Uniform, UniformBuffer, UniformBufferBindingPoint,
@@ -17,12 +20,13 @@ use crate::{
   texture::{Texture, TextureUnit},
 };
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug)]
 pub struct CmdBuf<B>
 where
   B: Backend,
 {
   pub(crate) raw: B::CmdBuf,
+  cache: Arc<Mutex<Cache<B>>>,
 }
 
 impl<B> Drop for CmdBuf<B>
@@ -34,62 +38,59 @@ where
   }
 }
 
+/// Creates methods of the form:
+///
+///   pub $name(&self, value: $ty) -> Result<&Self, B::Err>
+///
+/// The syntax is:
+///
+///  mk_cmd_buf_cached_methods!(
+///    // first form
+///    foo: FooType = cmd_buf_foo,
+///
+///    // second form, to add optional methods to the expression value
+///    bar: BarType = cmd_buf_bar @value value.into(),
+///  );
+macro_rules! mk_cmd_buf_cached_method {
+  ($name:ident : $ty:ty = $method:ident) => {
+    pub fn $name(&self, value: &$ty) -> Result<&Self, B::Err> {
+      self
+        .cache
+        .lock()
+        .map_err(From::from)?
+        .$name()
+        .set_if_invalid(value, || B::$method(&self.raw, value.clone()))
+        .map(move |_| self)
+    }
+  };
+}
+
 impl<B> CmdBuf<B>
 where
   B: Backend,
 {
-  pub(crate) fn from_raw(raw: B::CmdBuf) -> Self {
-    Self { raw }
-  }
+  mk_cmd_buf_cached_method!(blending: BlendingMode = cmd_buf_blending);
 
-  pub fn blending(&self, blending: BlendingMode) -> Result<&Self, B::Err> {
-    B::cmd_buf_blending(&self.raw, blending)?;
-    Ok(self)
-  }
+  mk_cmd_buf_cached_method!(depth_test: DepthTest = cmd_buf_depth_test);
 
-  pub fn depth_test(&self, depth_test: DepthTest) -> Result<&Self, B::Err> {
-    B::cmd_buf_depth_test(&self.raw, depth_test)?;
-    Ok(self)
-  }
+  mk_cmd_buf_cached_method!(depth_write: DepthWrite = cmd_buf_depth_write);
 
-  pub fn depth_write(&self, depth_write: DepthWrite) -> Result<&Self, B::Err> {
-    B::cmd_buf_depth_write(&self.raw, depth_write)?;
-    Ok(self)
-  }
+  mk_cmd_buf_cached_method!(stencil_test: StencilTest = cmd_buf_stencil_test);
 
-  pub fn stencil_test(&self, stencil_test: StencilTest) -> Result<&Self, B::Err> {
-    B::cmd_buf_stencil_test(&self.raw, stencil_test)?;
-    Ok(self)
-  }
+  mk_cmd_buf_cached_method!(face_culling: FaceCulling = cmd_buf_face_culling);
 
-  pub fn face_culling(&self, face_culling: FaceCulling) -> Result<&Self, B::Err> {
-    B::cmd_buf_face_culling(&self.raw, face_culling)?;
-    Ok(self)
-  }
+  mk_cmd_buf_cached_method!(viewport: Viewport = cmd_buf_viewport);
 
-  pub fn viewport(&self, viewport: Viewport) -> Result<&Self, B::Err> {
-    B::cmd_buf_viewport(&self.raw, viewport)?;
-    Ok(self)
-  }
+  mk_cmd_buf_cached_method!(scissor: Scissor = cmd_buf_scissor);
 
-  pub fn scissor(&self, scissor: Scissor) -> Result<&Self, B::Err> {
-    B::cmd_buf_scissor(&self.raw, scissor)?;
-    Ok(self)
-  }
+  mk_cmd_buf_cached_method!(clear_color: RGBA32F = cmd_buf_clear_color);
 
-  pub fn clear_color(&self, clear_color: impl Into<Option<RGBA>>) -> Result<&Self, B::Err> {
-    B::cmd_buf_clear_color(&self.raw, clear_color.into())?;
-    Ok(self)
-  }
+  mk_cmd_buf_cached_method!(clear_depth: f32 = cmd_buf_clear_depth);
 
-  pub fn clear_depth(&self, clear_depth: impl Into<Option<f32>>) -> Result<&Self, B::Err> {
-    B::cmd_buf_clear_depth(&self.raw, clear_depth.into())?;
-    Ok(self)
-  }
+  mk_cmd_buf_cached_method!(srgb: bool = cmd_buf_srgb);
 
-  pub fn srgb(&self, srgb: bool) -> Result<&Self, B::Err> {
-    B::cmd_buf_srgb(&self.raw, srgb)?;
-    Ok(self)
+  pub(crate) fn from_raw(raw: B::CmdBuf, cache: Arc<Mutex<Cache<B>>>) -> Self {
+    Self { raw, cache }
   }
 
   pub fn uniform(&self, uniform: &Uniform<B>, value: *const u8) -> Result<&Self, B::Err> {
@@ -98,7 +99,7 @@ where
   }
 
   /// Mark a texture as being active.
-  pub fn texture(&self, texture: &Texture<B>, unit: &TextureUnit<B>) -> Result<&Self, B::Err> {
+  pub fn texture(&self, texture: &Texture<B>) -> Result<&Self, B::Err> {
     B::cmd_buf_bind_texture(&self.raw, &texture.raw, &unit.raw)?;
     Ok(self)
   }
@@ -106,7 +107,6 @@ where
   /// Connect a texture unit to a texture binding point.
   pub fn texture_binding_point(
     &self,
-    unit: &TextureUnit<B>,
     binding_point: &TextureBindingPoint<B>,
   ) -> Result<&Self, B::Err> {
     B::cmd_buf_bind_texture_unit(&self.raw, &unit.raw, &binding_point.raw)?;
@@ -114,11 +114,7 @@ where
   }
 
   /// Mark a uniform buffer as being active.
-  pub fn uniform_buffer(
-    &self,
-    uniform_buffer: &UniformBuffer<B>,
-    unit: &UniformBufferUnit<B>,
-  ) -> Result<&Self, B::Err> {
+  pub fn uniform_buffer(&self, uniform_buffer: &UniformBuffer<B>) -> Result<&Self, B::Err> {
     B::cmd_buf_bind_uniform_buffer(&self.raw, &uniform_buffer.raw, &unit.raw)?;
     Ok(self)
   }
@@ -126,7 +122,7 @@ where
   /// Connect a uniform buffer unit to a uniform buffer binding point.
   pub fn uniform_buffer_binding_point(
     &self,
-    unit: &UniformBufferUnit<B>,
+    uniform_buffer: &UniformBuffer<B>,
     binding_point: &UniformBufferBindingPoint<B>,
   ) -> Result<&Self, B::Err> {
     B::cmd_buf_bind_uniform_buffer_unit(&self.raw, &unit.raw, &binding_point.raw)?;
