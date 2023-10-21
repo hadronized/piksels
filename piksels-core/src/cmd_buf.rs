@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, Weak};
 
 use piksels_backend::{
   blending::BlendingMode,
@@ -11,7 +11,7 @@ use piksels_backend::{
 };
 
 use crate::{
-  cache::Cache,
+  cache::ScarceCache,
   render_targets::RenderTargets,
   shader::{
     Shader, TextureBindingPoint, Uniform, UniformBuffer, UniformBufferBindingPoint,
@@ -26,7 +26,7 @@ where
   B: Backend,
 {
   pub(crate) raw: B::CmdBuf,
-  cache: Arc<Mutex<Cache<B>>>,
+  cache: Weak<Mutex<ScarceCache<B>>>,
 }
 
 impl<B> Drop for CmdBuf<B>
@@ -34,7 +34,9 @@ where
   B: Backend,
 {
   fn drop(&mut self) {
-    B::drop_cmd_buf(&self.raw);
+    if let Some(Ok(mut cache)) = self.cache.upgrade().map(|c| c.lock()) {
+      cache.untrack_cmd_buf(&self.raw);
+    }
   }
 }
 
@@ -89,7 +91,7 @@ where
 
   mk_cmd_buf_cached_method!(srgb: bool = cmd_buf_srgb);
 
-  pub(crate) fn from_raw(raw: B::CmdBuf, cache: Arc<Mutex<Cache<B>>>) -> Self {
+  pub(crate) fn from_raw(raw: B::CmdBuf, cache: Weak<Mutex<ScarceCache<B>>>) -> Self {
     Self { raw, cache }
   }
 

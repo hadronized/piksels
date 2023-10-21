@@ -1,9 +1,4 @@
-//! Cached backend state.
-//!
-//! Backends implement a procedural version of the API. However, when we issue a call to a backend function twice with
-//! the same parameter, oftentimes, we could have ommitted calling the function a second time (e.g. binding twice
-//! the same resource). For this reason, backends functions are not directly called, but instead we use a cache to
-//! check whether function parameters / state have changed.
+//! Various caches used to accellerate backend implementations.
 
 use std::collections::HashMap;
 
@@ -19,8 +14,13 @@ use piksels_backend::{
 
 use crate::units::Units;
 
+/// Cache for scarce resources.
+///
+/// This cache is responsible for holding created scarce resources; eventually dropping them. It must be synchronized
+/// with Drop implementations of the scarce wrappers, so that dropping a resource somewhere removes it from the cache,
+/// and dropping the cache first makes the Drop implementation do nothing.
 #[derive(Debug)]
-pub struct Cache<B>
+pub struct ScarceCache<B>
 where
   B: Backend,
 {
@@ -67,7 +67,7 @@ where
   info: Option<BackendInfo>,
 }
 
-impl<B> Drop for Cache<B>
+impl<B> Drop for ScarceCache<B>
 where
   B: Backend,
 {
@@ -123,7 +123,7 @@ macro_rules! cache_methods_pipeline_vars {
   }
 }
 
-impl<B> Cache<B>
+impl<B> ScarceCache<B>
 where
   B: Backend,
 {
@@ -217,7 +217,7 @@ where
   }
 }
 
-impl<B> Cache<B> where B: Backend {}
+impl<B> ScarceCache<B> where B: Backend {}
 
 /// Cached value.
 ///

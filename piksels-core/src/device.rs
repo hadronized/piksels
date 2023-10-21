@@ -1,9 +1,6 @@
 use std::{
   collections::HashSet,
-  sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc, Mutex,
-  },
+  sync::{Arc, Mutex},
 };
 
 use piksels_backend::{
@@ -16,7 +13,7 @@ use piksels_backend::{
 };
 
 use crate::{
-  cache::Cache, cmd_buf::CmdBuf, render_targets::RenderTargets, shader::Shader,
+  cache::ScarceCache, cmd_buf::CmdBuf, render_targets::RenderTargets, shader::Shader,
   swap_chain::SwapChain, texture::Texture, vertex_array::VertexArray,
 };
 
@@ -26,18 +23,7 @@ where
   B: Backend,
 {
   backend: B,
-  cache: Arc<Mutex<Cache<B>>>,
-  active: Arc<AtomicBool>,
-}
-
-impl<B> Drop for Device<B>
-where
-  B: Backend,
-{
-  fn drop(&mut self) {
-    // this prevents backend scarce resources to be dropped while we don’t have the backend anymore
-    self.active.store(false, Ordering::Relaxed);
-  }
+  cache: Arc<Mutex<ScarceCache<B>>>,
 }
 
 macro_rules! cache_options {
@@ -72,15 +58,9 @@ where
     info: BackendInfo,
   );
 
-  pub fn new(backend: B) -> Self {
-    let cache = Arc::new(Mutex::new(Cache::new(&backend)));
-    let active = Arc::new(AtomicBool::new(true));
-
-    Self {
-      backend,
-      cache,
-      active,
-    }
+  pub fn new(backend: B) -> Result<Self, B::Err> {
+    let cache = Arc::new(Mutex::new(ScarceCache::new(&backend)?));
+    Ok(Self { backend, cache })
   }
 
   pub fn new_vertex_array(
@@ -94,7 +74,15 @@ where
     let vertex_array = self
       .backend
       .new_vertex_array(&vertices, &instances, &indices)
-      .map(|raw| VertexArray::from_raw(raw, self.cache.clone(), vertices, instances, indices))?;
+      .map(|raw| {
+        VertexArray::from_raw(
+          raw,
+          Arc::downgrade(&self.cache),
+          vertices,
+          instances,
+          indices,
+        )
+      })?;
 
     self
       .cache
@@ -118,7 +106,7 @@ where
         depth_stencil_attachment_point,
         storage,
       )
-      .map(RenderTargets::from_raw)?;
+      .map(|raw| RenderTargets::from_raw(raw, Arc::downgrade(&self.cache)))?;
 
     self
       .cache
@@ -130,7 +118,10 @@ where
   }
 
   pub fn new_shader(&self, sources: ShaderSources) -> Result<Shader<B>, B::Err> {
-    let shader = self.backend.new_shader(sources).map(Shader::from_raw)?;
+    let shader = self
+      .backend
+      .new_shader(sources)
+      .map(|raw| Shader::from_raw(raw, Arc::downgrade(&self.cache)))?;
 
     self
       .cache
@@ -145,7 +136,7 @@ where
     let texture = self
       .backend
       .new_texture(storage, sampling)
-      .map(Texture::from_raw)?;
+      .map(|raw| Texture::from_raw(raw, Arc::downgrade(&self.cache)))?;
 
     self
       .cache
@@ -160,7 +151,7 @@ where
     let cmd_buf = self
       .backend
       .new_cmd_buf()
-      .map(|cmd_buf| CmdBuf::from_raw(cmd_buf, self.cache.clone()))?;
+      .map(|cmd_buf| CmdBuf::from_raw(cmd_buf, Arc::downgrade(&self.cache)))?;
 
     self
       .cache
@@ -180,7 +171,7 @@ where
     let swap_chain = self
       .backend
       .new_swap_chain(width, height, mode)
-      .map(SwapChain::from_raw)?;
+      .map(|raw| SwapChain::from_raw(raw, Arc::downgrade(&self.cache)))?;
 
     self
       .cache

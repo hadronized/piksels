@@ -1,7 +1,11 @@
+use std::sync::{Mutex, Weak};
+
 use piksels_backend::{
   texture::{Rect, Size},
   Backend,
 };
+
+use crate::cache::ScarceCache;
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct TextureUnit<B>
@@ -11,12 +15,13 @@ where
   pub(crate) raw: B::TextureUnit,
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug)]
 pub struct Texture<B>
 where
   B: Backend,
 {
   pub(crate) raw: B::Texture,
+  cache: Weak<Mutex<ScarceCache<B>>>,
 }
 
 impl<B> Drop for Texture<B>
@@ -24,7 +29,9 @@ where
   B: Backend,
 {
   fn drop(&mut self) {
-    B::drop_texture(&self.raw);
+    if let Some(Ok(mut cache)) = self.cache.upgrade().map(|c| c.lock()) {
+      cache.untrack_texture(&self.raw);
+    }
   }
 }
 
@@ -32,8 +39,8 @@ impl<B> Texture<B>
 where
   B: Backend,
 {
-  pub(crate) fn from_raw(raw: B::Texture) -> Self {
-    Self { raw }
+  pub(crate) fn from_raw(raw: B::Texture, cache: Weak<Mutex<ScarceCache<B>>>) -> Self {
+    Self { raw, cache }
   }
 
   pub fn resize(&self, size: Size) -> Result<(), B::Err> {
