@@ -3,29 +3,12 @@ use piksels_backend::{
   Backend,
 };
 
-#[derive(Debug, Eq, PartialEq)]
-pub struct TextureUnit<B>
-where
-  B: Backend,
-{
-  pub(crate) raw: B::TextureUnit,
-}
-
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug)]
 pub struct Texture<B>
 where
   B: Backend,
 {
   pub(crate) raw: B::Texture,
-}
-
-impl<B> Drop for Texture<B>
-where
-  B: Backend,
-{
-  fn drop(&mut self) {
-    B::drop_texture(&self.raw);
-  }
 }
 
 impl<B> Texture<B>

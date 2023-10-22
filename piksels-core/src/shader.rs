@@ -1,20 +1,11 @@
 use piksels_backend::{shader::UniformType, Backend};
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug)]
 pub struct Shader<B>
 where
   B: Backend,
 {
   pub(crate) raw: B::Shader,
-}
-
-impl<B> Drop for Shader<B>
-where
-  B: Backend,
-{
-  fn drop(&mut self) {
-    B::drop_shader(&self.raw);
-  }
 }
 
 impl<B> Shader<B>
@@ -67,14 +58,6 @@ where
   B: Backend,
 {
   pub(crate) raw: B::UniformBuffer,
-}
-
-#[derive(Debug, Eq, PartialEq)]
-pub struct UniformBufferUnit<B>
-where
-  B: Backend,
-{
-  pub(crate) raw: B::UniformBufferUnit,
 }
 
 #[derive(Debug, Eq, PartialEq)]

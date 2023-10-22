@@ -2,21 +2,12 @@ use piksels_backend::Backend;
 
 use crate::render_targets::RenderTargets;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug)]
 pub struct SwapChain<B>
 where
   B: Backend,
 {
   pub(crate) raw: B::SwapChain,
-}
-
-impl<B> Drop for SwapChain<B>
-where
-  B: Backend,
-{
-  fn drop(&mut self) {
-    B::drop_swap_chain(&self.raw);
-  }
 }
 
 impl<B> SwapChain<B>

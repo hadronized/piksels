@@ -1,20 +1,11 @@
 use piksels_backend::Backend;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug)]
 pub struct RenderTargets<B>
 where
   B: Backend,
 {
   pub(crate) raw: B::RenderTargets,
-}
-
-impl<B> Drop for RenderTargets<B>
-where
-  B: Backend,
-{
-  fn drop(&mut self) {
-    B::drop_render_targets(&self.raw);
-  }
 }
 
 impl<B> RenderTargets<B>

@@ -14,8 +14,11 @@ use crate::{
   texture::Texture, vertex_array::VertexArray,
 };
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Device<B> {
+#[derive(Debug)]
+pub struct Device<B>
+where
+  B: Backend,
+{
   backend: B,
 }
 
@@ -23,8 +26,8 @@ impl<B> Device<B>
 where
   B: Backend,
 {
-  pub fn new(backend: B) -> Self {
-    Self { backend }
+  pub fn new(backend: B) -> Result<Self, B::Err> {
+    Ok(Self { backend })
   }
 
   pub fn author(&self) -> Result<String, B::Err> {

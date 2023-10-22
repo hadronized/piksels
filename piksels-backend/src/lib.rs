@@ -5,7 +5,7 @@ use std::{
 };
 
 use blending::BlendingMode;
-use color::RGBA;
+use color::RGBA32F;
 use depth_stencil::{DepthTest, DepthWrite, StencilTest};
 use error::Error;
 use face_culling::FaceCulling;
@@ -36,6 +36,7 @@ macro_rules! mk_bckd_type_getters {
 }
 
 pub mod blending;
+pub mod cache;
 pub mod color;
 pub mod depth_stencil;
 pub mod error;
@@ -47,6 +48,7 @@ pub mod scissor;
 pub mod shader;
 pub mod swap_chain;
 pub mod texture;
+pub mod units;
 pub mod vertex;
 pub mod vertex_array;
 pub mod viewport;
@@ -83,11 +85,9 @@ pub trait Backend {
   type SwapChain: Scarce<Self>;
   type Texture: Scarce<Self>;
   type TextureBindingPoint: Scarce<Self>;
-  type TextureUnit: Unit;
   type Uniform: Scarce<Self>;
   type UniformBuffer: Scarce<Self>;
   type UniformBufferBindingPoint: Scarce<Self>;
-  type UniformBufferUnit: Unit;
   type VertexArray: Scarce<Self>;
 
   /// Backend author.
@@ -220,47 +220,39 @@ pub trait Backend {
 
   fn cmd_buf_scissor(cmd_buf: &Self::CmdBuf, scissor: Scissor) -> Result<(), Self::Err>;
 
-  fn cmd_buf_clear_color(
-    cmd_buf: &Self::CmdBuf,
-    clear_color: Option<RGBA>,
-  ) -> Result<(), Self::Err>;
+  fn cmd_buf_clear_color(cmd_buf: &Self::CmdBuf, clear_color: RGBA32F) -> Result<(), Self::Err>;
 
-  fn cmd_buf_clear_depth(cmd_buf: &Self::CmdBuf, clear_depth: Option<f32>)
-    -> Result<(), Self::Err>;
+  fn cmd_buf_clear_depth(cmd_buf: &Self::CmdBuf, clear_depth: f32) -> Result<(), Self::Err>;
 
   fn cmd_buf_srgb(cmd_buf: &Self::CmdBuf, srgb: bool) -> Result<(), Self::Err>;
 
   fn cmd_buf_set_uniform(
     cmd_buf: &Self::CmdBuf,
     uniform: &Self::Uniform,
-    value: *const u8,
+    value: *const u8, // TODO: type with UniformValue trait
   ) -> Result<(), Self::Err>;
 
-  /// Bind a texture to a unit.
-  fn cmd_buf_bind_texture(
+  /// Bind a texture.
+  fn cmd_buf_bind_texture(cmd_buf: &Self::CmdBuf, texture: &Self::Texture)
+    -> Result<(), Self::Err>;
+
+  /// Bind a texture to a texture binding point.
+  fn cmd_buf_bind_texture_binding_point(
     cmd_buf: &Self::CmdBuf,
     texture: &Self::Texture,
-    unit: &Self::TextureUnit,
-  ) -> Result<(), Self::Err>;
-
-  /// Bind a texture unit to a texture binding point.
-  fn cmd_buf_bind_texture_unit(
-    cmd_buf: &Self::CmdBuf,
-    unit: &Self::TextureUnit,
     binding_point: &Self::TextureBindingPoint,
   ) -> Result<(), Self::Err>;
 
-  /// Bind a uniform buffer to a unit.
+  /// Bind a uniform buffer.
   fn cmd_buf_bind_uniform_buffer(
     cmd_buf: &Self::CmdBuf,
     uniform_buffer: &Self::UniformBuffer,
-    unit: &Self::UniformBufferUnit,
   ) -> Result<(), Self::Err>;
 
-  /// Bind a uniform buffer unit to a uniform buffer binding point.
-  fn cmd_buf_bind_uniform_buffer_unit(
+  /// Bind a uniform buffer to a uniform buffer binding point.
+  fn cmd_buf_bind_uniform_buffer_binding_point(
     cmd_buf: &Self::CmdBuf,
-    unit: &Self::UniformBufferUnit,
+    uniform_buffer: &Self::UniformBuffer,
     binding_point: &Self::UniformBufferBindingPoint,
   ) -> Result<(), Self::Err>;
 
@@ -295,8 +287,4 @@ pub trait Backend {
     swap_chain: &Self::SwapChain,
     render_targets: &Self::RenderTargets,
   ) -> Result<(), Self::Err>;
-
-  fn max_texture_units(&self) -> Result<Self::TextureUnit, Self::Err>;
-
-  fn max_uniform_buffer_units(&self) -> Result<Self::UniformBufferUnit, Self::Err>;
 }
