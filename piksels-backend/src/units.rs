@@ -1,8 +1,11 @@
 //! Units for indexed scarce resources, such as textures and uniform buffers.
+//!
+//! Some backends have the concept of « units », and this module exposes the [`Units`] type which helps with units
+//! operations, such as getting the next available unit, etc.
 
 use std::collections::HashMap;
 
-use piksels_backend::{error::Error, Backend, Unit};
+use crate::{error::Error, Backend, Unit};
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct Units<B, U>

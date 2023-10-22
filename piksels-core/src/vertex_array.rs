@@ -1,14 +1,9 @@
-use std::{
-  ops::{Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive},
-  sync::{Mutex, Weak},
-};
+use std::ops::{Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive};
 
 use piksels_backend::{
   vertex_array::{VertexArrayData, VertexArrayUpdate},
   Backend,
 };
-
-use crate::cache::Cache;
 
 #[derive(Debug)]
 pub struct VertexArray<B>
@@ -16,22 +11,10 @@ where
   B: Backend,
 {
   pub(crate) raw: B::VertexArray,
-  cache: Weak<Mutex<Cache<B>>>,
   vertices: VertexArrayData,
   instances: VertexArrayData,
   indices: Vec<u32>,
   vertex_count: usize,
-}
-
-impl<B> Drop for VertexArray<B>
-where
-  B: Backend,
-{
-  fn drop(&mut self) {
-    if let Some(Ok(mut cache)) = self.cache.upgrade().map(|c| c.lock()) {
-      cache.untrack_vertex_array(&self.raw);
-    }
-  }
 }
 
 impl<B> VertexArray<B>
@@ -40,7 +23,6 @@ where
 {
   pub(crate) fn from_raw(
     raw: B::VertexArray,
-    cache: Weak<Mutex<Cache<B>>>,
     vertices: VertexArrayData,
     instances: VertexArrayData,
     indices: Vec<u32>,
@@ -53,7 +35,6 @@ where
 
     Self {
       raw,
-      cache,
       vertices,
       instances,
       indices,

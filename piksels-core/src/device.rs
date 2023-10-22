@@ -1,7 +1,4 @@
-use std::{
-  collections::HashSet,
-  sync::{Arc, Mutex},
-};
+use std::collections::HashSet;
 
 use piksels_backend::{
   render_targets::{ColorAttachmentPoint, DepthStencilAttachmentPoint},
@@ -13,8 +10,8 @@ use piksels_backend::{
 };
 
 use crate::{
-  cache::Cache, cmd_buf::CmdBuf, render_targets::RenderTargets, shader::Shader,
-  swap_chain::SwapChain, texture::Texture, vertex_array::VertexArray,
+  cmd_buf::CmdBuf, render_targets::RenderTargets, shader::Shader, swap_chain::SwapChain,
+  texture::Texture, vertex_array::VertexArray,
 };
 
 #[derive(Debug)]
@@ -23,44 +20,34 @@ where
   B: Backend,
 {
   backend: B,
-  cache: Arc<Mutex<Cache<B>>>,
-}
-
-macro_rules! cache_options {
-  ($($var:ident : $ty:ty),* $(,)?) => {
-    $(
-      pub fn $var(&self) -> Result<$ty, B::Err> {
-        let mut cache = self.cache.lock().map_err(|e| e.into())?;
-
-        match cache.$var() {
-          Some(x) => Ok(x.clone()),
-
-          None => {
-            let x = self.backend.$var()?;
-            *cache.$var() = Some(x.clone());
-            Ok(x)
-          }
-        }
-      }
-    )*
-  };
 }
 
 impl<B> Device<B>
 where
   B: Backend,
 {
-  cache_options!(
-    author: String,
-    name: String,
-    version: String,
-    shading_lang_version: String,
-    info: BackendInfo,
-  );
-
   pub fn new(backend: B) -> Result<Self, B::Err> {
-    let cache = Arc::new(Mutex::new(Cache::new(&backend)?));
-    Ok(Self { backend, cache })
+    Ok(Self { backend })
+  }
+
+  pub fn author(&self) -> Result<String, B::Err> {
+    self.backend.author()
+  }
+
+  pub fn name(&self) -> Result<String, B::Err> {
+    self.backend.name()
+  }
+
+  pub fn version(&self) -> Result<String, B::Err> {
+    self.backend.version()
+  }
+
+  pub fn shading_lang_version(&self) -> Result<String, B::Err> {
+    self.backend.shading_lang_version()
+  }
+
+  pub fn info(&self) -> Result<BackendInfo, B::Err> {
+    self.backend.info()
   }
 
   pub fn new_vertex_array(
@@ -71,26 +58,10 @@ where
   ) -> Result<VertexArray<B>, B::Err> {
     let indices = indices.into();
 
-    let vertex_array = self
+    self
       .backend
       .new_vertex_array(&vertices, &instances, &indices)
-      .map(|raw| {
-        VertexArray::from_raw(
-          raw,
-          Arc::downgrade(&self.cache),
-          vertices,
-          instances,
-          indices,
-        )
-      })?;
-
-    self
-      .cache
-      .lock()
-      .map_err(From::from)?
-      .track_vertex_array(&vertex_array.raw);
-
-    Ok(vertex_array)
+      .map(|raw| VertexArray::from_raw(raw, vertices, instances, indices))
   }
 
   pub fn new_render_targets(
@@ -99,67 +70,29 @@ where
     depth_stencil_attachment_point: Option<DepthStencilAttachmentPoint>,
     storage: Storage,
   ) -> Result<RenderTargets<B>, B::Err> {
-    let render_targets = self
+    self
       .backend
       .new_render_targets(
         color_attachment_points,
         depth_stencil_attachment_point,
         storage,
       )
-      .map(|raw| RenderTargets::from_raw(raw, Arc::downgrade(&self.cache)))?;
-
-    self
-      .cache
-      .lock()
-      .map_err(From::from)?
-      .track_render_targets(&render_targets.raw);
-
-    Ok(render_targets)
+      .map(RenderTargets::from_raw)
   }
 
   pub fn new_shader(&self, sources: ShaderSources) -> Result<Shader<B>, B::Err> {
-    let shader = self
-      .backend
-      .new_shader(sources)
-      .map(|raw| Shader::from_raw(raw, Arc::downgrade(&self.cache)))?;
-
-    self
-      .cache
-      .lock()
-      .map_err(From::from)?
-      .track_shader(&shader.raw);
-
-    Ok(shader)
+    self.backend.new_shader(sources).map(Shader::from_raw)
   }
 
   pub fn new_texture(&self, storage: Storage, sampling: Sampling) -> Result<Texture<B>, B::Err> {
-    let texture = self
+    self
       .backend
       .new_texture(storage, sampling)
-      .map(|raw| Texture::from_raw(raw, Arc::downgrade(&self.cache)))?;
-
-    self
-      .cache
-      .lock()
-      .map_err(From::from)?
-      .track_texture(&texture.raw);
-
-    Ok(texture)
+      .map(Texture::from_raw)
   }
 
   pub fn new_cmd_buf(&self) -> Result<CmdBuf<B>, B::Err> {
-    let cmd_buf = self
-      .backend
-      .new_cmd_buf()
-      .map(|cmd_buf| CmdBuf::from_raw(cmd_buf, Arc::downgrade(&self.cache)))?;
-
-    self
-      .cache
-      .lock()
-      .map_err(From::from)?
-      .track_cmd_buf(&cmd_buf.raw);
-
-    Ok(cmd_buf)
+    self.backend.new_cmd_buf().map(CmdBuf::from_raw)
   }
 
   pub fn new_swap_chain(
@@ -168,17 +101,9 @@ where
     height: u32,
     mode: SwapChainMode,
   ) -> Result<SwapChain<B>, B::Err> {
-    let swap_chain = self
+    self
       .backend
       .new_swap_chain(width, height, mode)
-      .map(|raw| SwapChain::from_raw(raw, Arc::downgrade(&self.cache)))?;
-
-    self
-      .cache
-      .lock()
-      .map_err(From::from)?
-      .track_swap_chain(&swap_chain.raw);
-
-    Ok(swap_chain)
+      .map(SwapChain::from_raw)
   }
 }

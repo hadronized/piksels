@@ -1,8 +1,4 @@
-use std::sync::{Mutex, Weak};
-
 use piksels_backend::{shader::UniformType, Backend};
-
-use crate::cache::Cache;
 
 #[derive(Debug)]
 pub struct Shader<B>
@@ -10,26 +6,14 @@ where
   B: Backend,
 {
   pub(crate) raw: B::Shader,
-  cache: Weak<Mutex<Cache<B>>>,
-}
-
-impl<B> Drop for Shader<B>
-where
-  B: Backend,
-{
-  fn drop(&mut self) {
-    if let Some(Ok(mut cache)) = self.cache.upgrade().map(|c| c.lock()) {
-      cache.untrack_shader(&self.raw);
-    }
-  }
 }
 
 impl<B> Shader<B>
 where
   B: Backend,
 {
-  pub(crate) fn from_raw(raw: B::Shader, cache: Weak<Mutex<Cache<B>>>) -> Self {
-    Self { raw, cache }
+  pub(crate) fn from_raw(raw: B::Shader) -> Self {
+    Self { raw }
   }
 
   pub fn uniform(
@@ -74,14 +58,6 @@ where
   B: Backend,
 {
   pub(crate) raw: B::UniformBuffer,
-}
-
-#[derive(Debug, Eq, PartialEq)]
-pub struct UniformBufferUnit<B>
-where
-  B: Backend,
-{
-  pub(crate) raw: B::UniformBufferUnit,
 }
 
 #[derive(Debug, Eq, PartialEq)]
