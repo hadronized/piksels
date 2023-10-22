@@ -13,7 +13,7 @@ use piksels_backend::{
 };
 
 use crate::{
-  cache::ScarceCache, cmd_buf::CmdBuf, render_targets::RenderTargets, shader::Shader,
+  cache::Cache, cmd_buf::CmdBuf, render_targets::RenderTargets, shader::Shader,
   swap_chain::SwapChain, texture::Texture, vertex_array::VertexArray,
 };
 
@@ -23,7 +23,7 @@ where
   B: Backend,
 {
   backend: B,
-  cache: Arc<Mutex<ScarceCache<B>>>,
+  cache: Arc<Mutex<Cache<B>>>,
 }
 
 macro_rules! cache_options {
@@ -59,7 +59,7 @@ where
   );
 
   pub fn new(backend: B) -> Result<Self, B::Err> {
-    let cache = Arc::new(Mutex::new(ScarceCache::new(&backend)?));
+    let cache = Arc::new(Mutex::new(Cache::new(&backend)?));
     Ok(Self { backend, cache })
   }
 

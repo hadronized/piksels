@@ -5,7 +5,7 @@ use piksels_backend::{
   Backend,
 };
 
-use crate::cache::ScarceCache;
+use crate::cache::Cache;
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct TextureUnit<B>
@@ -21,7 +21,7 @@ where
   B: Backend,
 {
   pub(crate) raw: B::Texture,
-  cache: Weak<Mutex<ScarceCache<B>>>,
+  cache: Weak<Mutex<Cache<B>>>,
 }
 
 impl<B> Drop for Texture<B>
@@ -39,7 +39,7 @@ impl<B> Texture<B>
 where
   B: Backend,
 {
-  pub(crate) fn from_raw(raw: B::Texture, cache: Weak<Mutex<ScarceCache<B>>>) -> Self {
+  pub(crate) fn from_raw(raw: B::Texture, cache: Weak<Mutex<Cache<B>>>) -> Self {
     Self { raw, cache }
   }
 

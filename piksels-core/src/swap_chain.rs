@@ -2,7 +2,7 @@ use std::sync::{Mutex, Weak};
 
 use piksels_backend::Backend;
 
-use crate::{cache::ScarceCache, render_targets::RenderTargets};
+use crate::{cache::Cache, render_targets::RenderTargets};
 
 #[derive(Debug)]
 pub struct SwapChain<B>
@@ -10,7 +10,7 @@ where
   B: Backend,
 {
   pub(crate) raw: B::SwapChain,
-  cache: Weak<Mutex<ScarceCache<B>>>,
+  cache: Weak<Mutex<Cache<B>>>,
 }
 
 impl<B> Drop for SwapChain<B>
@@ -28,7 +28,7 @@ impl<B> SwapChain<B>
 where
   B: Backend,
 {
-  pub(crate) fn from_raw(raw: B::SwapChain, cache: Weak<Mutex<ScarceCache<B>>>) -> Self {
+  pub(crate) fn from_raw(raw: B::SwapChain, cache: Weak<Mutex<Cache<B>>>) -> Self {
     Self { raw, cache }
   }
 

@@ -11,7 +11,7 @@ use piksels_backend::{
 };
 
 use crate::{
-  cache::ScarceCache,
+  cache::Cache,
   render_targets::RenderTargets,
   shader::{
     Shader, TextureBindingPoint, Uniform, UniformBuffer, UniformBufferBindingPoint,
@@ -26,7 +26,7 @@ where
   B: Backend,
 {
   pub(crate) raw: B::CmdBuf,
-  cache: Weak<Mutex<ScarceCache<B>>>,
+  cache: Weak<Mutex<Cache<B>>>,
 }
 
 impl<B> Drop for CmdBuf<B>
@@ -91,7 +91,7 @@ where
 
   mk_cmd_buf_cached_method!(srgb: bool = cmd_buf_srgb);
 
-  pub(crate) fn from_raw(raw: B::CmdBuf, cache: Weak<Mutex<ScarceCache<B>>>) -> Self {
+  pub(crate) fn from_raw(raw: B::CmdBuf, cache: Weak<Mutex<Cache<B>>>) -> Self {
     Self { raw, cache }
   }
 

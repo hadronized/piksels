@@ -2,7 +2,7 @@ use std::sync::{Mutex, Weak};
 
 use piksels_backend::Backend;
 
-use crate::cache::ScarceCache;
+use crate::cache::Cache;
 
 #[derive(Debug)]
 pub struct RenderTargets<B>
@@ -10,7 +10,7 @@ where
   B: Backend,
 {
   pub(crate) raw: B::RenderTargets,
-  cache: Weak<Mutex<ScarceCache<B>>>,
+  cache: Weak<Mutex<Cache<B>>>,
 }
 
 impl<B> Drop for RenderTargets<B>
@@ -28,7 +28,7 @@ impl<B> RenderTargets<B>
 where
   B: Backend,
 {
-  pub(crate) fn from_raw(raw: B::RenderTargets, cache: Weak<Mutex<ScarceCache<B>>>) -> Self {
+  pub(crate) fn from_raw(raw: B::RenderTargets, cache: Weak<Mutex<Cache<B>>>) -> Self {
     Self { raw, cache }
   }
 

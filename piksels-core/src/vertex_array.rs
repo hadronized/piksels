@@ -8,7 +8,7 @@ use piksels_backend::{
   Backend,
 };
 
-use crate::cache::ScarceCache;
+use crate::cache::Cache;
 
 #[derive(Debug)]
 pub struct VertexArray<B>
@@ -16,7 +16,7 @@ where
   B: Backend,
 {
   pub(crate) raw: B::VertexArray,
-  cache: Weak<Mutex<ScarceCache<B>>>,
+  cache: Weak<Mutex<Cache<B>>>,
   vertices: VertexArrayData,
   instances: VertexArrayData,
   indices: Vec<u32>,
@@ -40,7 +40,7 @@ where
 {
   pub(crate) fn from_raw(
     raw: B::VertexArray,
-    cache: Weak<Mutex<ScarceCache<B>>>,
+    cache: Weak<Mutex<Cache<B>>>,
     vertices: VertexArrayData,
     instances: VertexArrayData,
     indices: Vec<u32>,

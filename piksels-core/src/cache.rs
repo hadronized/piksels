@@ -14,13 +14,8 @@ use piksels_backend::{
 
 use crate::units::Units;
 
-/// Cache for scarce resources.
-///
-/// This cache is responsible for holding created scarce resources; eventually dropping them. It must be synchronized
-/// with Drop implementations of the scarce wrappers, so that dropping a resource somewhere removes it from the cache,
-/// and dropping the cache first makes the Drop implementation do nothing.
 #[derive(Debug)]
-pub struct ScarceCache<B>
+pub struct Cache<B>
 where
   B: Backend,
 {
@@ -36,19 +31,6 @@ where
   cmd_bufs: HashMap<B::ScarceIndex, B::CmdBuf>,
   swap_chains: HashMap<B::ScarceIndex, B::SwapChain>,
 
-  // pipeline variables
-  viewport: Cached<Viewport>,
-  clear_color: Cached<RGBA32F>,
-  clear_depth: Cached<f32>,
-  clear_stencil: Cached<i32>,
-  blending: Cached<BlendingMode>,
-  depth_test: Cached<DepthTest>,
-  depth_write: Cached<DepthWrite>,
-  stencil_test: Cached<StencilTest>,
-  face_culling: Cached<FaceCulling>,
-  srgb: Cached<bool>,
-  scissor: Cached<Scissor>,
-  primitive_restart: Cached<bool>,
   // texture support
   texture_units: Units<B, B::TextureUnit>,
   bound_textures: HashMap<B::ScarceIndex, B::TextureUnit>,
@@ -58,16 +40,11 @@ where
   // pipeline resources (render targets, shaders)
   bound_render_targets: Cached<B::RenderTargets>,
   bound_shader: Cached<B::Shader>,
-  // query info; not properly “cached” — instead they are more likely either never queried, or queried once and kept
-  // around for ever
-  author: Option<String>,
-  name: Option<String>,
-  version: Option<String>,
-  shading_lang_version: Option<String>,
-  info: Option<BackendInfo>,
+
+  query: QueryCache,
 }
 
-impl<B> Drop for ScarceCache<B>
+impl<B> Drop for Cache<B>
 where
   B: Backend,
 {
@@ -113,17 +90,7 @@ macro_rules! cache_methods_scarce_resource {
   };
 }
 
-macro_rules! cache_methods_pipeline_vars {
-  ($($name:ident: $ty:ty),* $(,)?) => {
-    $(
-      pub fn $name(&mut self) -> &mut Cached<$ty> {
-        &mut self.$name
-      }
-    )*
-  }
-}
-
-impl<B> ScarceCache<B>
+impl<B> Cache<B>
 where
   B: Backend,
 {
@@ -140,24 +107,6 @@ where
     track = track_swap_chain, untrack = untrack_swap_chain, drop = drop_swap_chain (swap_chains: SwapChain),
   );
 
-  cache_methods_pipeline_vars!(
-    viewport: Viewport,
-    clear_color: RGBA32F,
-
-    clear_depth: f32,
-    clear_stencil: i32,
-    blending: BlendingMode,
-    depth_test: DepthTest,
-    depth_write: DepthWrite,
-    stencil_test: StencilTest,
-    face_culling: FaceCulling,
-    srgb: bool,
-    scissor: Scissor,
-    primitive_restart: bool,
-    bound_render_targets: B::RenderTargets,
-    bound_shader: B::Shader,
-  );
-
   pub fn new(backend: &B) -> Result<Self, B::Err> {
     Ok(Self {
       vertex_arrays: Default::default(),
@@ -170,32 +119,72 @@ where
       textures: Default::default(),
       cmd_bufs: Default::default(),
       swap_chains: Default::default(),
-      viewport: Default::default(),
-      clear_color: Default::default(),
-      clear_depth: Default::default(),
-      clear_stencil: Default::default(),
-      blending: Default::default(),
-      depth_test: Default::default(),
-      depth_write: Default::default(),
-      stencil_test: Default::default(),
-      face_culling: Default::default(),
-      srgb: Default::default(),
-      scissor: Default::default(),
-      primitive_restart: Default::default(),
       texture_units: Units::new(backend.max_texture_units()?),
       bound_textures: HashMap::default(),
       uniform_buffer_units: Units::new(backend.max_uniform_buffer_units()?),
       bound_uniform_buffers: HashMap::default(),
       bound_render_targets: Default::default(),
       bound_shader: Default::default(),
-      author: Default::default(),
-      name: Default::default(),
-      version: Default::default(),
-      shading_lang_version: Default::default(),
-      info: Default::default(),
+      query: Default::default(),
     })
   }
+}
 
+/// Per command buffer cache.
+#[derive(Debug, Default)]
+pub struct CmdBufCache {
+  viewport: Cached<Viewport>,
+  clear_color: Cached<RGBA32F>,
+  clear_depth: Cached<f32>,
+  clear_stencil: Cached<i32>,
+  blending: Cached<BlendingMode>,
+  depth_test: Cached<DepthTest>,
+  depth_write: Cached<DepthWrite>,
+  stencil_test: Cached<StencilTest>,
+  face_culling: Cached<FaceCulling>,
+  srgb: Cached<bool>,
+  scissor: Cached<Scissor>,
+  primitive_restart: Cached<bool>,
+}
+
+macro_rules! cache_cmd_buf_vars {
+  ($($name:ident: $ty:ty),* $(,)?) => {
+    $(
+      pub fn $name(&mut self) -> &mut Cached<$ty> {
+        &mut self.$name
+      }
+    )*
+  }
+}
+
+impl CmdBufCache {
+  cache_cmd_buf_vars!(
+    viewport: Viewport,
+    clear_color: RGBA32F,
+    clear_depth: f32,
+    clear_stencil: i32,
+    blending: BlendingMode,
+    depth_test: DepthTest,
+    depth_write: DepthWrite,
+    stencil_test: StencilTest,
+    face_culling: FaceCulling,
+    srgb: bool,
+    scissor: Scissor,
+    primitive_restart: bool,
+  );
+}
+
+/// Cache for query information.
+#[derive(Debug, Default, Eq, PartialEq)]
+pub struct QueryCache {
+  author: Option<String>,
+  name: Option<String>,
+  version: Option<String>,
+  shading_lang_version: Option<String>,
+  info: Option<BackendInfo>,
+}
+
+impl QueryCache {
   pub fn author(&mut self) -> &mut Option<String> {
     &mut self.author
   }
@@ -216,8 +205,6 @@ where
     &mut self.info
   }
 }
-
-impl<B> ScarceCache<B> where B: Backend {}
 
 /// Cached value.
 ///
