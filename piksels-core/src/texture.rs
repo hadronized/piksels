@@ -37,3 +37,20 @@ where
     B::clear_texels(&self.raw, rect, mipmaps, value)
   }
 }
+
+#[derive(Debug)]
+pub struct TextureBindingPoint<B>
+where
+  B: Backend,
+{
+  pub(crate) raw: B::TextureBindingPoint,
+}
+
+impl<B> TextureBindingPoint<B>
+where
+  B: Backend,
+{
+  pub(crate) fn from_raw(raw: B::TextureBindingPoint) -> Self {
+    Self { raw }
+  }
+}

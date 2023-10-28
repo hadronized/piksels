@@ -82,6 +82,8 @@ pub trait Backend {
   type RenderTargets: Scarce<Self>;
   type ScarceIndex: Clone + Debug + Eq + Hash + Ord + PartialEq + PartialOrd;
   type Shader: Scarce<Self>;
+  type ShaderTextureBindingPoint: Scarce<Self>;
+  type ShaderUniformBufferBindingPoint: Scarce<Self>;
   type SwapChain: Scarce<Self>;
   type Texture: Scarce<Self>;
   type TextureBindingPoint: Scarce<Self>;
@@ -163,17 +165,27 @@ pub trait Backend {
     name: &str,
   ) -> Result<Self::UniformBuffer, Self::Err>;
 
-  /// Get a texture binding point from a shader.
-  fn get_texture_binding_point(
+  /// Get a texture binding point.
+  fn get_texture_binding_point(&self, index: usize)
+    -> Result<Self::TextureBindingPoint, Self::Err>;
+
+  /// Get a uniform buffer binding point.
+  fn get_uniform_buffer_binding_point(
+    &self,
+    index: usize,
+  ) -> Result<Self::UniformBufferBindingPoint, Self::Err>;
+
+  /// Get a shader texture binding point from a shader.
+  fn get_shader_texture_binding_point(
     shader: &Self::Shader,
     name: &str,
-  ) -> Result<Self::TextureBindingPoint, Self::Err>;
+  ) -> Result<Self::ShaderTextureBindingPoint, Self::Err>;
 
   /// Get a uniform buffer binding point from a shader.
-  fn get_uniform_buffer_binding_point(
+  fn get_shader_uniform_buffer_binding_point(
     shader: &Self::Shader,
     name: &str,
-  ) -> Result<Self::UniformBufferBindingPoint, Self::Err>;
+  ) -> Result<Self::ShaderUniformBufferBindingPoint, Self::Err>;
 
   fn new_texture(&self, storage: Storage, sampling: Sampling) -> Result<Self::Texture, Self::Err>;
 
@@ -233,27 +245,31 @@ pub trait Backend {
   ) -> Result<(), Self::Err>;
 
   /// Bind a texture.
-  fn cmd_buf_bind_texture(cmd_buf: &Self::CmdBuf, texture: &Self::Texture)
-    -> Result<(), Self::Err>;
-
-  /// Bind a texture to a texture binding point.
-  fn cmd_buf_bind_texture_binding_point(
+  fn cmd_buf_bind_texture(
     cmd_buf: &Self::CmdBuf,
     texture: &Self::Texture,
     binding_point: &Self::TextureBindingPoint,
+  ) -> Result<(), Self::Err>;
+
+  /// Associate a texture binding point to a shader texture binding point.
+  fn cmd_buf_associate_texture_binding_point(
+    cmd_buf: &Self::CmdBuf,
+    texture_binding_point: &Self::TextureBindingPoint,
+    shader_binding_point: &Self::ShaderTextureBindingPoint,
   ) -> Result<(), Self::Err>;
 
   /// Bind a uniform buffer.
   fn cmd_buf_bind_uniform_buffer(
     cmd_buf: &Self::CmdBuf,
     uniform_buffer: &Self::UniformBuffer,
+    binding_point: &Self::UniformBufferBindingPoint,
   ) -> Result<(), Self::Err>;
 
-  /// Bind a uniform buffer to a uniform buffer binding point.
-  fn cmd_buf_bind_uniform_buffer_binding_point(
+  /// Associate a uniform buffer binding point to a shader uniform buffer binding point.
+  fn cmd_buf_associate_uniform_buffer_binding_point(
     cmd_buf: &Self::CmdBuf,
-    uniform_buffer: &Self::UniformBuffer,
-    binding_point: &Self::UniformBufferBindingPoint,
+    uniform_buffer_binding_point: &Self::UniformBufferBindingPoint,
+    shader_uniform_buffer_binding_point: &Self::ShaderUniformBufferBindingPoint,
   ) -> Result<(), Self::Err>;
 
   fn cmd_buf_bind_render_targets(

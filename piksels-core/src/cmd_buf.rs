@@ -10,8 +10,11 @@ use piksels_backend::{
 
 use crate::{
   render_targets::RenderTargets,
-  shader::{Shader, TextureBindingPoint, Uniform, UniformBuffer, UniformBufferBindingPoint},
-  texture::Texture,
+  shader::{
+    Shader, ShaderTextureBindingPoint, ShaderUniformBufferBindingPoint, Uniform, UniformBuffer,
+    UniformBufferBindingPoint,
+  },
+  texture::{Texture, TextureBindingPoint},
 };
 
 #[derive(Debug)]
@@ -86,37 +89,49 @@ where
   }
 
   /// Mark a texture as being active.
-  pub fn texture(&self, texture: &Texture<B>) -> Result<&Self, B::Err> {
-    B::cmd_buf_bind_texture(&self.raw, &texture.raw)?;
-    Ok(self)
-  }
-
-  /// Connect a texture to a texture binding point.
-  pub fn texture_binding_point(
+  pub fn use_texture(
     &self,
     texture: &Texture<B>,
     binding_point: &TextureBindingPoint<B>,
   ) -> Result<&Self, B::Err> {
-    B::cmd_buf_bind_texture_binding_point(&self.raw, &texture.raw, &binding_point.raw)?;
+    B::cmd_buf_bind_texture(&self.raw, &texture.raw, &binding_point.raw)?;
+    Ok(self)
+  }
+
+  /// Associate a texture binding point with a shader texture binding point.
+  pub fn associate_texture(
+    &self,
+    texture_binding_point: &TextureBindingPoint<B>,
+    shader_texture_binding_point: &ShaderTextureBindingPoint<B>,
+  ) -> Result<&Self, B::Err> {
+    B::cmd_buf_associate_texture_binding_point(
+      &self.raw,
+      &texture_binding_point.raw,
+      &shader_texture_binding_point.raw,
+    )?;
     Ok(self)
   }
 
   /// Mark a uniform buffer as being active.
-  pub fn uniform_buffer(&self, uniform_buffer: &UniformBuffer<B>) -> Result<&Self, B::Err> {
-    B::cmd_buf_bind_uniform_buffer(&self.raw, &uniform_buffer.raw)?;
-    Ok(self)
-  }
-
-  /// Connect a uniform buffer unit to a uniform buffer binding point.
-  pub fn uniform_buffer_binding_point(
+  pub fn use_uniform_buffer(
     &self,
     uniform_buffer: &UniformBuffer<B>,
     binding_point: &UniformBufferBindingPoint<B>,
   ) -> Result<&Self, B::Err> {
-    B::cmd_buf_bind_uniform_buffer_binding_point(
+    B::cmd_buf_bind_uniform_buffer(&self.raw, &uniform_buffer.raw, &binding_point.raw)?;
+    Ok(self)
+  }
+
+  /// Associate a uniform buffer binding point with a shader uniform buffer binding point.
+  pub fn associate_uniform_buffer(
+    &self,
+    uniform_buffer_binding_point: &UniformBufferBindingPoint<B>,
+    shader_uniform_buffer_binding_point: &ShaderUniformBufferBindingPoint<B>,
+  ) -> Result<&Self, B::Err> {
+    B::cmd_buf_associate_uniform_buffer_binding_point(
       &self.raw,
-      &uniform_buffer.raw,
-      &binding_point.raw,
+      &uniform_buffer_binding_point.raw,
+      &shader_uniform_buffer_binding_point.raw,
     )?;
     Ok(self)
   }

@@ -31,16 +31,17 @@ where
   pub fn texture_binding_point(
     &self,
     name: impl AsRef<str>,
-  ) -> Result<TextureBindingPoint<B>, B::Err> {
-    B::get_texture_binding_point(&self.raw, name.as_ref()).map(|raw| TextureBindingPoint { raw })
+  ) -> Result<ShaderTextureBindingPoint<B>, B::Err> {
+    B::get_shader_texture_binding_point(&self.raw, name.as_ref())
+      .map(|raw| ShaderTextureBindingPoint { raw })
   }
 
   pub fn uniform_buffer_binding_point(
     &self,
     name: impl AsRef<str>,
-  ) -> Result<UniformBufferBindingPoint<B>, B::Err> {
-    B::get_uniform_buffer_binding_point(&self.raw, name.as_ref())
-      .map(|raw| UniformBufferBindingPoint { raw })
+  ) -> Result<ShaderUniformBufferBindingPoint<B>, B::Err> {
+    B::get_shader_uniform_buffer_binding_point(&self.raw, name.as_ref())
+      .map(|raw| ShaderUniformBufferBindingPoint { raw })
   }
 }
 
@@ -52,7 +53,7 @@ where
   pub(crate) raw: B::Uniform,
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug)]
 pub struct UniformBuffer<B>
 where
   B: Backend,
@@ -60,7 +61,7 @@ where
   pub(crate) raw: B::UniformBuffer,
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug)]
 pub struct UniformBufferBindingPoint<B>
 where
   B: Backend,
@@ -68,10 +69,27 @@ where
   pub(crate) raw: B::UniformBufferBindingPoint,
 }
 
-#[derive(Debug, Eq, PartialEq)]
-pub struct TextureBindingPoint<B>
+impl<B> UniformBufferBindingPoint<B>
 where
   B: Backend,
 {
-  pub(crate) raw: B::TextureBindingPoint,
+  pub(crate) fn from_raw(raw: B::UniformBufferBindingPoint) -> Self {
+    Self { raw }
+  }
+}
+
+#[derive(Debug)]
+pub struct ShaderUniformBufferBindingPoint<B>
+where
+  B: Backend,
+{
+  pub(crate) raw: B::ShaderUniformBufferBindingPoint,
+}
+
+#[derive(Debug)]
+pub struct ShaderTextureBindingPoint<B>
+where
+  B: Backend,
+{
+  pub(crate) raw: B::ShaderTextureBindingPoint,
 }

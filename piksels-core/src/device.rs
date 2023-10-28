@@ -10,8 +10,12 @@ use piksels_backend::{
 };
 
 use crate::{
-  cmd_buf::CmdBuf, render_targets::RenderTargets, shader::Shader, swap_chain::SwapChain,
-  texture::Texture, vertex_array::VertexArray,
+  cmd_buf::CmdBuf,
+  render_targets::RenderTargets,
+  shader::{Shader, UniformBufferBindingPoint},
+  swap_chain::SwapChain,
+  texture::{Texture, TextureBindingPoint},
+  vertex_array::VertexArray,
 };
 
 #[derive(Debug)]
@@ -105,5 +109,22 @@ where
       .backend
       .new_swap_chain(width, height, mode)
       .map(SwapChain::from_raw)
+  }
+
+  pub fn get_texture_binding_point(&self, index: usize) -> Result<TextureBindingPoint<B>, B::Err> {
+    self
+      .backend
+      .get_texture_binding_point(index)
+      .map(TextureBindingPoint::from_raw)
+  }
+
+  pub fn get_uniform_buffer_binding_point(
+    &self,
+    index: usize,
+  ) -> Result<UniformBufferBindingPoint<B>, B::Err> {
+    self
+      .backend
+      .get_uniform_buffer_binding_point(index)
+      .map(UniformBufferBindingPoint::from_raw)
   }
 }
