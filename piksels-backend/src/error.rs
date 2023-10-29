@@ -13,6 +13,9 @@ pub enum Error {
 
   #[error("thread is poisoned")]
   PoisonedThread,
+
+  #[error("extension check failed: {reason}")]
+  ExtensionCheck { reason: String },
 }
 
 impl<T> From<PoisonError<T>> for Error {

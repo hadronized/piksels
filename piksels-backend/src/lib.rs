@@ -1,8 +1,4 @@
-use std::{
-  collections::HashSet,
-  fmt::{Debug, Display},
-  hash::Hash,
-};
+use std::{collections::HashSet, fmt::Debug, hash::Hash};
 
 use blending::BlendingMode;
 use color::RGBA32F;
@@ -40,6 +36,7 @@ pub mod cache;
 pub mod color;
 pub mod depth_stencil;
 pub mod error;
+pub mod extension;
 pub mod face_culling;
 pub mod pixel;
 pub mod primitive;
@@ -65,12 +62,6 @@ where
 {
   fn scarce_index(&self) -> B::ScarceIndex;
   fn scarce_clone(&self) -> Self;
-}
-
-pub trait Unit:
-  Clone + Debug + Display + Default + Eq + Hash + Ord + PartialEq + PartialOrd
-{
-  fn next_unit(&self) -> Self;
 }
 
 pub trait Backend {
@@ -106,6 +97,9 @@ pub trait Backend {
 
   /// More information about the backend (git hash, etc.).
   fn info(&self) -> Result<BackendInfo, Self::Err>;
+
+  /// List enabled extensions.
+  fn extensions(&self) -> impl Iterator<Item = &'static str>;
 
   /// Create a new [`VertexArray`].
   fn new_vertex_array(

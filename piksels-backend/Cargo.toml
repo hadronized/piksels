@@ -12,6 +12,10 @@ keywords = ["graphics", "rendering"]
 categories = ["graphics", "rendering::graphics-api"]
 publish = false
 
+[features]
+default = ["ext-logger"]
+ext-logger = []
+
 [dependencies]
 bitflags = "2.4.0"
 thiserror = "1.0.49"
