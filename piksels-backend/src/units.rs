@@ -3,9 +3,13 @@
 //! Some backends have the concept of « units », and this module exposes the [`Units`] type which helps with units
 //! operations, such as getting the next available unit, etc.
 
-use std::collections::HashMap;
+use std::{collections::HashMap, hash::Hash};
 
-use crate::{error::Error, Backend, Unit};
+use crate::{error::Error, Backend};
+
+pub trait Unit: Clone + Default + Eq + Hash + Ord + PartialEq + PartialOrd {
+  fn next_unit(&self) -> Self;
+}
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct Units<B, U>

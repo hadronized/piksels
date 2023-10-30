@@ -1,6 +1,17 @@
-use std::fmt::Display;
+use std::{collections::HashSet, fmt::Display};
 
-use piksels_backend::{error::Error, Backend, BackendInfo, Scarce, Unit};
+use piksels_backend::{
+  color::RGBA32F,
+  error::Error,
+  extension::{
+    logger::{ExtLogger, LogEntry, LogLevel, Logger},
+    Extension,
+  },
+  extensions, info,
+  scissor::Scissor,
+  viewport::Viewport,
+  Backend, BackendInfo, Scarce,
+};
 use piksels_core::device::Device;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
@@ -33,22 +44,68 @@ impl Scarce<DummyBackend> for DummyResource {
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct DummyUnit;
+pub struct DummyResourceBindingPoint;
 
-impl Unit for DummyUnit {
-  fn next_unit(&self) -> Self {
-    DummyUnit
+impl Scarce<DummyBackend> for DummyResourceBindingPoint {
+  fn scarce_index(&self) {}
+
+  fn scarce_clone(&self) -> Self {
+    DummyResourceBindingPoint
   }
 }
 
-impl Display for DummyUnit {
+impl Display for DummyResourceBindingPoint {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    f.write_str("DummyUnit")
+    f.write_str("DummyResourceBindingPoint")
   }
 }
 
-#[derive(Debug)]
-struct DummyBackend;
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub struct DummyShaderBindingPoint;
+
+impl Scarce<DummyBackend> for DummyShaderBindingPoint {
+  fn scarce_index(&self) {}
+
+  fn scarce_clone(&self) -> Self {
+    DummyShaderBindingPoint
+  }
+}
+
+impl Display for DummyShaderBindingPoint {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.write_str("DummyShaderBindingPoint")
+  }
+}
+
+#[derive(Default)]
+struct DummyBackend {
+  extensions: HashSet<&'static str>,
+  logger: Option<Logger>,
+}
+
+impl ExtLogger for DummyBackend {
+  fn log(&self, log_entry: LogEntry) {
+    println!(
+      "{file}:{line}:{column} [{module}] | {level:?} | {msg}",
+      file = log_entry.file,
+      line = log_entry.line,
+      column = log_entry.column,
+      module = log_entry.module,
+      level = log_entry.level,
+      msg = log_entry.msg,
+    );
+  }
+}
+
+impl Extension<Logger> for DummyBackend {
+  const NAME: &'static str = "logger";
+
+  fn init_ext(&mut self, logger: Logger) -> Result<(), Self::Err> {
+    self.logger = Some(logger);
+    self.extensions.insert(Self::NAME);
+    Ok(())
+  }
+}
 
 impl Backend for DummyBackend {
   type CmdBuf = DummyResource;
@@ -58,17 +115,18 @@ impl Backend for DummyBackend {
   type RenderTargets = DummyResource;
   type ScarceIndex = ();
   type Shader = DummyResource;
+  type ShaderTextureBindingPoint = DummyShaderBindingPoint;
+  type ShaderUniformBufferBindingPoint = DummyShaderBindingPoint;
   type SwapChain = DummyResource;
   type Texture = DummyResource;
-  type TextureBindingPoint = DummyResource;
-  type TextureUnit = DummyUnit;
+  type TextureBindingPoint = DummyResourceBindingPoint;
   type Uniform = DummyResource;
   type UniformBuffer = DummyResource;
-  type UniformBufferBindingPoint = DummyResource;
-  type UniformBufferUnit = DummyUnit;
+  type UniformBufferBindingPoint = DummyResourceBindingPoint;
   type VertexArray = DummyResource;
 
   fn author(&self) -> Result<String, Self::Err> {
+    info!(self, "getting author");
     Ok("Dimitri 'phaazon' Sabadie <dimitri.sabadie@gmail.com>".to_owned())
   }
 
@@ -89,6 +147,10 @@ impl Backend for DummyBackend {
       version: env!("CARGO_PKG_VERSION"),
       git_commit_hash: "HEAD",
     })
+  }
+
+  fn extensions(&self) -> impl Iterator<Item = &'static str> {
+    self.extensions.iter().cloned()
   }
 
   fn new_vertex_array(
@@ -169,16 +231,31 @@ impl Backend for DummyBackend {
   }
 
   fn get_texture_binding_point(
-    _shader: &Self::Shader,
-    _name: &str,
+    &self,
+    _index: usize,
   ) -> Result<Self::TextureBindingPoint, Self::Err> {
     Err(DummyBackendError::Unimplemented)
   }
 
   fn get_uniform_buffer_binding_point(
+    &self,
+    _index: usize,
+  ) -> Result<Self::UniformBufferBindingPoint, Self::Err> {
+    Err(DummyBackendError::Unimplemented)
+  }
+
+  fn get_shader_texture_binding_point(
     _shader: &Self::Shader,
     _name: &str,
-  ) -> Result<Self::UniformBufferBindingPoint, Self::Err> {
+  ) -> Result<Self::ShaderTextureBindingPoint, Self::Err> {
+    Err(DummyBackendError::Unimplemented)
+  }
+
+  /// Get a uniform buffer binding point from a shader.
+  fn get_shader_uniform_buffer_binding_point(
+    _shader: &Self::Shader,
+    _name: &str,
+  ) -> Result<Self::ShaderUniformBufferBindingPoint, Self::Err> {
     Err(DummyBackendError::Unimplemented)
   }
 
@@ -263,31 +340,19 @@ impl Backend for DummyBackend {
     Err(DummyBackendError::Unimplemented)
   }
 
-  fn cmd_buf_viewport(
-    _cmd_buf: &Self::CmdBuf,
-    _viewport: piksels_backend::viewport::Viewport,
-  ) -> Result<(), Self::Err> {
+  fn cmd_buf_viewport(_cmd_buf: &Self::CmdBuf, _viewport: Viewport) -> Result<(), Self::Err> {
     Err(DummyBackendError::Unimplemented)
   }
 
-  fn cmd_buf_scissor(
-    _cmd_buf: &Self::CmdBuf,
-    _scissor: piksels_backend::scissor::Scissor,
-  ) -> Result<(), Self::Err> {
+  fn cmd_buf_scissor(_cmd_buf: &Self::CmdBuf, _scissor: Scissor) -> Result<(), Self::Err> {
     Err(DummyBackendError::Unimplemented)
   }
 
-  fn cmd_buf_clear_color(
-    _cmd_buf: &Self::CmdBuf,
-    _clear_color: Option<piksels_backend::color::RGBA>,
-  ) -> Result<(), Self::Err> {
+  fn cmd_buf_clear_color(_cmd_buf: &Self::CmdBuf, _clear_color: RGBA32F) -> Result<(), Self::Err> {
     Err(DummyBackendError::Unimplemented)
   }
 
-  fn cmd_buf_clear_depth(
-    _cmd_buf: &Self::CmdBuf,
-    _clear_depth: Option<f32>,
-  ) -> Result<(), Self::Err> {
+  fn cmd_buf_clear_depth(_cmd_buf: &Self::CmdBuf, _clear_depth: f32) -> Result<(), Self::Err> {
     Err(DummyBackendError::Unimplemented)
   }
 
@@ -306,31 +371,31 @@ impl Backend for DummyBackend {
   fn cmd_buf_bind_texture(
     _cmd_buf: &Self::CmdBuf,
     _texture: &Self::Texture,
-    _unit: &Self::TextureUnit,
+    _binding_point: &Self::TextureBindingPoint,
   ) -> Result<(), Self::Err> {
     Err(DummyBackendError::Unimplemented)
   }
 
-  fn cmd_buf_bind_texture_unit(
+  fn cmd_buf_associate_texture_binding_point(
     _cmd_buf: &Self::CmdBuf,
-    _unit: &Self::TextureUnit,
-    _binding_point: &Self::TextureBindingPoint,
+    _texture_binding_point: &Self::TextureBindingPoint,
+    _shader_binding_point: &Self::ShaderTextureBindingPoint,
   ) -> Result<(), Self::Err> {
     Err(DummyBackendError::Unimplemented)
   }
 
   fn cmd_buf_bind_uniform_buffer(
     _cmd_buf: &Self::CmdBuf,
-    _uniform_buffer: &Self::Texture,
-    _unit: &Self::UniformBufferUnit,
+    _uniform_buffer: &Self::UniformBuffer,
+    _binding_point: &Self::UniformBufferBindingPoint,
   ) -> Result<(), Self::Err> {
     Err(DummyBackendError::Unimplemented)
   }
 
-  fn cmd_buf_bind_uniform_buffer_unit(
+  fn cmd_buf_associate_uniform_buffer_binding_point(
     _cmd_buf: &Self::CmdBuf,
-    _unit: &Self::UniformBufferUnit,
-    _binding_point: &Self::UniformBufferBindingPoint,
+    _uniform_buffer_binding_point: &Self::UniformBufferBindingPoint,
+    _shader_uniform_buffer_binding_point: &Self::ShaderUniformBufferBindingPoint,
   ) -> Result<(), Self::Err> {
     Err(DummyBackendError::Unimplemented)
   }
@@ -382,19 +447,16 @@ impl Backend for DummyBackend {
   ) -> Result<(), Self::Err> {
     Err(DummyBackendError::Unimplemented)
   }
-
-  fn max_texture_units(&self) -> Result<Self::TextureUnit, Self::Err> {
-    Err(DummyBackendError::Unimplemented)
-  }
-
-  fn max_uniform_buffer_units(&self) -> Result<Self::UniformBufferUnit, Self::Err> {
-    Err(DummyBackendError::Unimplemented)
-  }
 }
 
 #[test]
 fn dummy_backend_info() {
-  let device = Device::new(DummyBackend);
+  let mut backend = DummyBackend::default();
+
+  let mut init = || extensions!(backend, [Logger::new(LogLevel::Trace, |_| ())]);
+  let _: Result<(), DummyBackendError> = init();
+
+  let device = Device::new(backend).unwrap();
 
   assert_eq!(
     device.author(),
