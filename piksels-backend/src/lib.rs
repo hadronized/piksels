@@ -45,7 +45,6 @@ pub mod scissor;
 pub mod shader;
 pub mod swap_chain;
 pub mod texture;
-pub mod units;
 pub mod vertex;
 pub mod vertex_array;
 pub mod viewport;
