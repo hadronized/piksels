@@ -1,3 +1,9 @@
 [workspace]
 resolver = "2"
-members = ["piksels", "piksels-backend", "piksels-core"]
+
+members = [
+  "piksels",
+  "piksels-backend",
+  "piksels-backend-meta-gl",
+  "piksels-core"
+]
