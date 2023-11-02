@@ -4,7 +4,7 @@ use piksels_backend::{
   color::RGBA32F,
   error::Error,
   extension::{
-    logger::{ExtLogger, LogEntry, LogLevel, Logger},
+    logger::{ExtLogger, LogEntry, LogLevel, Logger, LoggerBuilder},
     Extension,
   },
   extensions, info,
@@ -35,7 +35,10 @@ impl Display for DummyBackendError {
 #[derive(Debug)]
 struct DummyResource;
 
-impl Scarce<DummyBackend> for DummyResource {
+impl<F> Scarce<DummyBackend<F>> for DummyResource
+where
+  F: Logger,
+{
   fn scarce_index(&self) {}
 
   fn scarce_clone(&self) -> Self {
@@ -46,7 +49,10 @@ impl Scarce<DummyBackend> for DummyResource {
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct DummyResourceBindingPoint;
 
-impl Scarce<DummyBackend> for DummyResourceBindingPoint {
+impl<F> Scarce<DummyBackend<F>> for DummyResourceBindingPoint
+where
+  F: Logger,
+{
   fn scarce_index(&self) {}
 
   fn scarce_clone(&self) -> Self {
@@ -63,7 +69,10 @@ impl Display for DummyResourceBindingPoint {
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct DummyShaderBindingPoint;
 
-impl Scarce<DummyBackend> for DummyShaderBindingPoint {
+impl<F> Scarce<DummyBackend<F>> for DummyShaderBindingPoint
+where
+  F: Logger,
+{
   fn scarce_index(&self) {}
 
   fn scarce_clone(&self) -> Self {
@@ -77,13 +86,10 @@ impl Display for DummyShaderBindingPoint {
   }
 }
 
-#[derive(Default)]
-struct DummyBackend {
-  extensions: HashSet<&'static str>,
-  logger: Option<Logger>,
-}
+#[derive(Debug)]
+struct DummyLogger;
 
-impl ExtLogger for DummyBackend {
+impl Logger for DummyLogger {
   fn log(&self, log_entry: LogEntry) {
     println!(
       "{file}:{line}:{column} [{module}] | {level:?} | {msg}",
@@ -97,17 +103,54 @@ impl ExtLogger for DummyBackend {
   }
 }
 
-impl Extension<Logger> for DummyBackend {
+struct DummyBackend<F>
+where
+  F: Logger,
+{
+  extensions: HashSet<&'static str>,
+  logger: Option<LoggerBuilder<F>>,
+}
+
+impl<F> Default for DummyBackend<F>
+where
+  F: Logger,
+{
+  fn default() -> Self {
+    Self {
+      extensions: HashSet::default(),
+      logger: Option::default(),
+    }
+  }
+}
+
+impl<F> ExtLogger for DummyBackend<F>
+where
+  F: Logger,
+{
+  fn log(&self, log_entry: LogEntry) {
+    if let Some(ref logger) = self.logger {
+      logger.logger.log(log_entry)
+    }
+  }
+}
+
+impl<F> Extension<LoggerBuilder<F>> for DummyBackend<F>
+where
+  F: Logger,
+{
   const NAME: &'static str = "logger";
 
-  fn init_ext(&mut self, logger: Logger) -> Result<(), Self::Err> {
+  fn init_ext(&mut self, logger: LoggerBuilder<F>) -> Result<(), Self::Err> {
     self.logger = Some(logger);
     self.extensions.insert(Self::NAME);
     Ok(())
   }
 }
 
-impl Backend for DummyBackend {
+impl<F> Backend for DummyBackend<F>
+where
+  F: Logger,
+{
   type CmdBuf = DummyResource;
   type ColorAttachment = DummyResource;
   type DepthStencilAttachment = DummyResource;
@@ -453,7 +496,7 @@ impl Backend for DummyBackend {
 fn dummy_backend_info() {
   let mut backend = DummyBackend::default();
 
-  let mut init = || extensions!(backend, [Logger::new(LogLevel::Trace, |_| ())]);
+  let mut init = || extensions!(backend, [LoggerBuilder::new(LogLevel::Trace, DummyLogger)]);
   let _: Result<(), DummyBackendError> = init();
 
   let device = Device::new(backend).unwrap();

@@ -2,38 +2,38 @@
 //!
 //! This extension allows to add logging capability to backends.
 
-/// Logger state.
-pub struct Logger {
+pub struct LoggerBuilder<F>
+where
+  F: Logger,
+{
   /// Filter used to filter logs.
   ///
   /// Only logs with a level less or equal to this level will be shown.
-  level_filter: LogLevel,
+  pub level_filter: LogLevel,
 
-  logger: Box<dyn Fn(LogEntry)>,
+  pub logger: F,
 }
 
-impl Logger {
-  pub fn new(level_filter: LogLevel, logger: impl 'static + Fn(LogEntry)) -> Self {
+impl<F> LoggerBuilder<F>
+where
+  F: Logger,
+{
+  pub fn new(level_filter: LogLevel, logger: F) -> Self {
     Self {
       level_filter,
-      logger: Box::new(logger),
+      logger,
     }
   }
+}
 
-  pub fn set_level_filter(&mut self, level_filter: LogLevel) {
-    self.level_filter = level_filter;
-  }
-
-  pub fn level_filter(&self) -> LogLevel {
-    self.level_filter
-  }
-
-  pub fn logger(&self) -> &impl Fn(LogEntry) {
-    &self.logger
-  }
+/// Logger implementation.
+pub trait Logger {
+  fn log(&self, log_entry: LogEntry);
 }
 
 /// Backends that can log.
+///
+/// Backends are supposed to call [`Logger::log`] to perform the actual logging on the provided logger.
 pub trait ExtLogger {
   fn log(&self, log_entry: LogEntry);
 }
@@ -63,6 +63,7 @@ pub struct LogEntry {
 #[macro_export]
 macro_rules! log {
   ($backend:expr, $lvl:ident, $($msg:tt)*) => {
+    #[cfg(feature = "ext-logger")]
     $backend.log($crate::extension::logger::LogEntry {
       level: $crate::extension::logger::LogLevel::$lvl,
       file: file!(),
