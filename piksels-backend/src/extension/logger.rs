@@ -2,10 +2,7 @@
 //!
 //! This extension allows to add logging capability to backends.
 
-pub struct LoggerBuilder<F>
-where
-  F: Logger,
-{
+pub struct LoggerExt<F> {
   /// Filter used to filter logs.
   ///
   /// Only logs with a level less or equal to this level will be shown.
@@ -14,10 +11,7 @@ where
   pub logger: F,
 }
 
-impl<F> LoggerBuilder<F>
-where
-  F: Logger,
-{
+impl<F> LoggerExt<F> {
   pub fn new(level_filter: LogLevel, logger: F) -> Self {
     Self {
       level_filter,
@@ -34,7 +28,7 @@ pub trait Logger {
 /// Backends that can log.
 ///
 /// Backends are supposed to call [`Logger::log`] to perform the actual logging on the provided logger.
-pub trait ExtLogger {
+pub trait BackendLogger {
   fn log(&self, log_entry: LogEntry);
 }
 
