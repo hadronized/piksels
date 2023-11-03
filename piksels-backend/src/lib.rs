@@ -4,6 +4,10 @@ use blending::BlendingMode;
 use color::RGBA32F;
 use depth_stencil::{DepthTest, DepthWrite, StencilTest};
 use error::Error;
+use extension::{
+  logger::{Logger, LoggerExt},
+  ExtensionsBuilder,
+};
 use face_culling::FaceCulling;
 use render_targets::{ColorAttachmentPoint, DepthStencilAttachmentPoint};
 use scissor::Scissor;
@@ -63,7 +67,7 @@ where
   fn scarce_clone(&self) -> Self;
 }
 
-pub trait Backend {
+pub trait Backend: Sized {
   type Err: From<Error>;
 
   type CmdBuf: Scarce<Self>;
@@ -82,6 +86,11 @@ pub trait Backend {
   type UniformBufferBindingPoint: Scarce<Self>;
   type VertexArray: Scarce<Self>;
 
+  /// Initialize the backend from extensions.
+  fn build(
+    extensions: ExtensionsBuilder<LoggerExt<impl 'static + Logger>>,
+  ) -> Result<Self, Self::Err>;
+
   /// Backend author.
   fn author(&self) -> Result<String, Self::Err>;
 
@@ -96,9 +105,6 @@ pub trait Backend {
 
   /// More information about the backend (git hash, etc.).
   fn info(&self) -> Result<BackendInfo, Self::Err>;
-
-  /// List enabled extensions.
-  fn extensions(&self) -> impl Iterator<Item = &'static str>;
 
   /// Create a new [`VertexArray`].
   fn new_vertex_array(

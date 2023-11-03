@@ -1,13 +1,13 @@
-use std::{collections::HashSet, fmt::Display};
+use std::fmt::Display;
 
 use piksels_backend::{
   color::RGBA32F,
   error::Error,
   extension::{
-    logger::{ExtLogger, LogEntry, LogLevel, Logger, LoggerBuilder},
-    Extension,
+    logger::{BackendLogger, LogEntry, LogLevel, Logger, LoggerExt},
+    ExtensionsBuilder,
   },
-  extensions, info,
+  info,
   scissor::Scissor,
   viewport::Viewport,
   Backend, BackendInfo, Scarce,
@@ -35,10 +35,7 @@ impl Display for DummyBackendError {
 #[derive(Debug)]
 struct DummyResource;
 
-impl<F> Scarce<DummyBackend<F>> for DummyResource
-where
-  F: Logger,
-{
+impl Scarce<DummyBackend> for DummyResource {
   fn scarce_index(&self) {}
 
   fn scarce_clone(&self) -> Self {
@@ -49,10 +46,7 @@ where
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct DummyResourceBindingPoint;
 
-impl<F> Scarce<DummyBackend<F>> for DummyResourceBindingPoint
-where
-  F: Logger,
-{
+impl Scarce<DummyBackend> for DummyResourceBindingPoint {
   fn scarce_index(&self) {}
 
   fn scarce_clone(&self) -> Self {
@@ -69,10 +63,7 @@ impl Display for DummyResourceBindingPoint {
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct DummyShaderBindingPoint;
 
-impl<F> Scarce<DummyBackend<F>> for DummyShaderBindingPoint
-where
-  F: Logger,
-{
+impl Scarce<DummyBackend> for DummyShaderBindingPoint {
   fn scarce_index(&self) {}
 
   fn scarce_clone(&self) -> Self {
@@ -103,54 +94,20 @@ impl Logger for DummyLogger {
   }
 }
 
-struct DummyBackend<F>
-where
-  F: Logger,
-{
-  extensions: HashSet<&'static str>,
-  logger: Option<LoggerBuilder<F>>,
+struct DummyBackend {
+  logger_level: LogLevel,
+  logger: Box<dyn 'static + Logger>,
 }
 
-impl<F> Default for DummyBackend<F>
-where
-  F: Logger,
-{
-  fn default() -> Self {
-    Self {
-      extensions: HashSet::default(),
-      logger: Option::default(),
-    }
-  }
-}
-
-impl<F> ExtLogger for DummyBackend<F>
-where
-  F: Logger,
-{
+impl BackendLogger for DummyBackend {
   fn log(&self, log_entry: LogEntry) {
-    if let Some(ref logger) = self.logger {
-      logger.logger.log(log_entry)
+    if log_entry.level <= self.logger_level {
+      self.logger.log(log_entry)
     }
   }
 }
 
-impl<F> Extension<LoggerBuilder<F>> for DummyBackend<F>
-where
-  F: Logger,
-{
-  const NAME: &'static str = "logger";
-
-  fn init_ext(&mut self, logger: LoggerBuilder<F>) -> Result<(), Self::Err> {
-    self.logger = Some(logger);
-    self.extensions.insert(Self::NAME);
-    Ok(())
-  }
-}
-
-impl<F> Backend for DummyBackend<F>
-where
-  F: Logger,
-{
+impl Backend for DummyBackend {
   type CmdBuf = DummyResource;
   type ColorAttachment = DummyResource;
   type DepthStencilAttachment = DummyResource;
@@ -167,6 +124,15 @@ where
   type UniformBuffer = DummyResource;
   type UniformBufferBindingPoint = DummyResourceBindingPoint;
   type VertexArray = DummyResource;
+
+  fn build(
+    extensions: ExtensionsBuilder<LoggerExt<impl 'static + Logger>>,
+  ) -> Result<Self, Self::Err> {
+    Ok(DummyBackend {
+      logger_level: extensions.logger.level_filter,
+      logger: Box::new(extensions.logger.logger),
+    })
+  }
 
   fn author(&self) -> Result<String, Self::Err> {
     info!(self, "getting author");
@@ -190,10 +156,6 @@ where
       version: env!("CARGO_PKG_VERSION"),
       git_commit_hash: "HEAD",
     })
-  }
-
-  fn extensions(&self) -> impl Iterator<Item = &'static str> {
-    self.extensions.iter().cloned()
   }
 
   fn new_vertex_array(
@@ -494,10 +456,13 @@ where
 
 #[test]
 fn dummy_backend_info() {
-  let mut backend = DummyBackend::default();
-
-  let mut init = || extensions!(backend, [LoggerBuilder::new(LogLevel::Trace, DummyLogger)]);
-  let _: Result<(), DummyBackendError> = init();
+  let init = || {
+    DummyBackend::build(
+      ExtensionsBuilder::default().logger(LoggerExt::new(LogLevel::Trace, DummyLogger)),
+    )
+  };
+  let backend: Result<DummyBackend, DummyBackendError> = init();
+  let backend = backend.unwrap();
 
   let device = Device::new(backend).unwrap();
 
