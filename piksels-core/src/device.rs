@@ -61,11 +61,16 @@ where
     indices: impl Into<Vec<u32>>,
   ) -> Result<VertexArray<B>, B::Err> {
     let indices = indices.into();
+    let vertex_count = if indices.is_empty() {
+      vertices.len()
+    } else {
+      indices.len()
+    };
 
     self
       .backend
       .new_vertex_array(&vertices, &instances, &indices)
-      .map(|raw| VertexArray::from_raw(raw, vertices, instances, indices))
+      .map(|raw| VertexArray::from_raw(raw, vertex_count))
   }
 
   pub fn new_render_targets(

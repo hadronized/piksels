@@ -9,6 +9,7 @@ use piksels_backend::{
   },
   info,
   scissor::Scissor,
+  vertex_array::{DataSelector, VertexArrayData},
   viewport::Viewport,
   Backend, BackendInfo, Scarce,
 };
@@ -161,8 +162,8 @@ impl Backend for DummyBackend {
 
   fn new_vertex_array(
     &self,
-    _vertices: &piksels_backend::vertex_array::VertexArrayData,
-    _instances: &piksels_backend::vertex_array::VertexArrayData,
+    _vertices: &VertexArrayData,
+    _instances: &VertexArrayData,
     _indices: &[u32],
   ) -> Result<Self::VertexArray, Self::Err> {
     Err(DummyBackendError::Unimplemented)
@@ -174,21 +175,23 @@ impl Backend for DummyBackend {
 
   fn map_vertex_array_bytes(
     _vertex_array: &Self::VertexArray,
-    _data_selector: piksels_backend::vertex_array::DataSelector,
+    _data_selector: DataSelector,
   ) -> Result<Self::VertexArrayMappedBytes, Self::Err> {
     Err(DummyBackendError::Unimplemented)
   }
 
   fn unmap_vertex_array_bytes(
-    _mapped_vertices: Self::VertexArrayMappedBytes,
+    _mapped_vertices: &Self::VertexArrayMappedBytes,
   ) -> Result<(), Self::Err> {
     Err(DummyBackendError::Unimplemented)
   }
 
-  fn vertex_array_bytes_data(
-    _bytes: &mut Self::VertexArrayMappedBytes,
-  ) -> Result<(*mut u8, usize), Self::Err> {
-    Err(DummyBackendError::Unimplemented)
+  fn vertex_array_bytes_data(_bytes: &Self::VertexArrayMappedBytes) -> (*const u8, usize) {
+    unimplemented!()
+  }
+
+  fn vertex_array_bytes_data_mut(_bytes: &mut Self::VertexArrayMappedBytes) -> (*mut u8, usize) {
+    unimplemented!()
   }
 
   fn new_render_targets(

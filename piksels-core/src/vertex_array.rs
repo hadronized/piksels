@@ -45,7 +45,8 @@ where
   B: Backend,
 {
   fn drop(&mut self) {
-    B::unmap_vertex_array_bytes(&self.raw);
+    // TODO: allow logging if the backend supports it?
+    let _ = B::unmap_vertex_array_bytes(&self.raw);
   }
 }
 
