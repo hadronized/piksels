@@ -124,6 +124,7 @@ impl Backend for DummyBackend {
   type UniformBuffer = DummyResource;
   type UniformBufferBindingPoint = DummyResourceBindingPoint;
   type VertexArray = DummyResource;
+  type VertexArrayMappedBytes = ();
 
   fn build(
     extensions: ExtensionsBuilder<LoggerExt<impl 'static + Logger>>,
@@ -171,10 +172,22 @@ impl Backend for DummyBackend {
     unimplemented!()
   }
 
-  fn update_vertex_array(
+  fn map_vertex_array_bytes(
     _vertex_array: &Self::VertexArray,
-    _update: piksels_backend::vertex_array::VertexArrayUpdate,
+    _data_selector: piksels_backend::vertex_array::DataSelector,
+  ) -> Result<Self::VertexArrayMappedBytes, Self::Err> {
+    Err(DummyBackendError::Unimplemented)
+  }
+
+  fn unmap_vertex_array_bytes(
+    _mapped_vertices: Self::VertexArrayMappedBytes,
   ) -> Result<(), Self::Err> {
+    Err(DummyBackendError::Unimplemented)
+  }
+
+  fn vertex_array_bytes_data(
+    _bytes: &mut Self::VertexArrayMappedBytes,
+  ) -> Result<(*mut u8, usize), Self::Err> {
     Err(DummyBackendError::Unimplemented)
   }
 

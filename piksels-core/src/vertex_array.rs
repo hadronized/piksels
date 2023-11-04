@@ -1,9 +1,9 @@
-use std::ops::{Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive};
-
-use piksels_backend::{
-  vertex_array::{VertexArrayData, VertexArrayUpdate},
-  Backend,
+use std::{
+  marker::PhantomData,
+  ops::{Deref, DerefMut, Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive},
 };
+
+use piksels_backend::{vertex_array::DataSelector, Backend};
 
 #[derive(Debug)]
 pub struct VertexArray<B>
@@ -11,9 +11,6 @@ where
   B: Backend,
 {
   pub(crate) raw: B::VertexArray,
-  vertices: VertexArrayData,
-  instances: VertexArrayData,
-  indices: Vec<u32>,
   vertex_count: usize,
 }
 
@@ -21,45 +18,68 @@ impl<B> VertexArray<B>
 where
   B: Backend,
 {
-  pub(crate) fn from_raw(
-    raw: B::VertexArray,
-    vertices: VertexArrayData,
-    instances: VertexArrayData,
-    indices: Vec<u32>,
-  ) -> Self {
-    let vertex_count = if indices.is_empty() {
-      vertices.len()
-    } else {
-      indices.len()
-    };
-
-    Self {
-      raw,
-      vertices,
-      instances,
-      indices,
-      vertex_count,
-    }
+  pub(crate) fn from_raw(raw: B::VertexArray, vertex_count: usize) -> Self {
+    Self { raw, vertex_count }
   }
 
-  pub fn vertices(&mut self) -> &mut VertexArrayData {
-    &mut self.vertices
-  }
-
-  pub fn instances(&mut self) -> &mut VertexArrayData {
-    &mut self.instances
-  }
-
-  pub fn indices(&mut self) -> &mut Vec<u32> {
-    &mut self.indices
+  pub fn map(&self, data_selector: DataSelector) -> Result<VertexArrayMappedBytes<B>, B::Err> {
+    B::map_vertex_array_bytes(&self.raw, data_selector).map(VertexArrayMappedBytes::from_raw)
   }
 
   pub fn vertex_count(&self) -> usize {
     self.vertex_count
   }
+}
 
-  pub fn update(&self, update: VertexArrayUpdate) -> Result<(), B::Err> {
-    B::update_vertex_array(&self.raw, update)
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VertexArrayMappedBytes<'a, B>
+where
+  B: Backend,
+{
+  raw: B::VertexArrayMappedBytes,
+  _phantom: PhantomData<&'a mut ()>,
+}
+
+impl<'a, B> Drop for VertexArrayMappedBytes<'a, B>
+where
+  B: Backend,
+{
+  fn drop(&mut self) {
+    B::unmap_vertex_array_bytes(&self.raw);
+  }
+}
+
+impl<'a, B> Deref for VertexArrayMappedBytes<'a, B>
+where
+  B: Backend,
+{
+  type Target = [u8];
+
+  fn deref(&self) -> &Self::Target {
+    let (data, len) = B::vertex_array_bytes_data(&self.raw);
+    unsafe { std::slice::from_raw_parts(data, len) }
+  }
+}
+
+impl<'a, B> DerefMut for VertexArrayMappedBytes<'a, B>
+where
+  B: Backend,
+{
+  fn deref_mut(&mut self) -> &mut Self::Target {
+    let (data, len) = B::vertex_array_bytes_data_mut(&mut self.raw);
+    unsafe { std::slice::from_raw_parts_mut(data, len) }
+  }
+}
+
+impl<'a, B> VertexArrayMappedBytes<'a, B>
+where
+  B: Backend,
+{
+  fn from_raw(raw: B::VertexArrayMappedBytes) -> Self {
+    Self {
+      raw,
+      _phantom: PhantomData,
+    }
   }
 }
 

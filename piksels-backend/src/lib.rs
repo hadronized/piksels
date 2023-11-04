@@ -13,11 +13,12 @@ use render_targets::{ColorAttachmentPoint, DepthStencilAttachmentPoint};
 use scissor::Scissor;
 use swap_chain::SwapChainMode;
 use texture::{Sampling, Storage};
+use vertex_array::DataSelector;
 use viewport::Viewport;
 
 use crate::{
   shader::{ShaderSources, UniformType},
-  vertex_array::{VertexArrayData, VertexArrayUpdate},
+  vertex_array::VertexArrayData,
 };
 
 /// A macro to help creating backend types methods.
@@ -85,6 +86,7 @@ pub trait Backend: Sized {
   type UniformBuffer: Scarce<Self>;
   type UniformBufferBindingPoint: Scarce<Self>;
   type VertexArray: Scarce<Self>;
+  type VertexArrayMappedBytes;
 
   /// Initialize the backend from extensions.
   fn build(
@@ -117,11 +119,22 @@ pub trait Backend: Sized {
   /// Drop a [`VertexArray`].
   fn drop_vertex_array(vertex_array: &Self::VertexArray);
 
-  /// Update vertices in a [`VertexArray`].
-  fn update_vertex_array(
+  /// Map bytes from a [`VertexArray`].
+  fn map_vertex_array_bytes(
     vertex_array: &Self::VertexArray,
-    update: VertexArrayUpdate,
+    data_selector: DataSelector,
+  ) -> Result<Self::VertexArrayMappedBytes, Self::Err>;
+
+  /// Unmap bytes from a [`VertexArray`].
+  fn unmap_vertex_array_bytes(
+    mapped_vertices: &Self::VertexArrayMappedBytes,
   ) -> Result<(), Self::Err>;
+
+  /// Obtain a pointer and the size in bytes of the underlying memory region.
+  fn vertex_array_bytes_data(bytes: &Self::VertexArrayMappedBytes) -> (*const u8, usize);
+
+  /// Obtain a mutable pointer and the size in bytes of the underlying memory region.
+  fn vertex_array_bytes_data_mut(bytes: &mut Self::VertexArrayMappedBytes) -> (*mut u8, usize);
 
   fn new_render_targets(
     &self,

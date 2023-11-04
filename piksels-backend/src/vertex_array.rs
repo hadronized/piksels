@@ -1,5 +1,3 @@
-use bitflags::bitflags;
-
 use crate::vertex::VertexAttr;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -65,10 +63,20 @@ pub enum MemoryLayout {
   Deinterleaved { data_per_attr: Vec<Vec<u8>> },
 }
 
-bitflags! {
-  pub struct VertexArrayUpdate: u8 {
-    const VERTICES = 0b00000001;
-    const INSTANCES = 0b00000010;
-    const INDICES = 0b00000100;
-  }
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum DataSelector {
+  /// Select interleaved vertices.
+  InterleavedVertices,
+
+  /// Select interleaved vertex instances.
+  InterleavedVertexInstances,
+
+  /// Select deinterleaved vertices (field identified by `index`).
+  DeinterleavedVertices { index: usize },
+
+  /// Select deinterleaved vertex instances (field identified by `index`).
+  DeinterleavedVertexInstances { index: usize },
+
+  /// Select indices.
+  Indices,
 }
