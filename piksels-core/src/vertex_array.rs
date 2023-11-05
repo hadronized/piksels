@@ -11,23 +11,18 @@ where
   B: Backend,
 {
   pub(crate) raw: B::VertexArray,
-  vertex_count: usize,
 }
 
 impl<B> VertexArray<B>
 where
   B: Backend,
 {
-  pub(crate) fn from_raw(raw: B::VertexArray, vertex_count: usize) -> Self {
-    Self { raw, vertex_count }
+  pub(crate) fn from_raw(raw: B::VertexArray) -> Self {
+    Self { raw }
   }
 
   pub fn map(&self, data_selector: DataSelector) -> Result<VertexArrayMappedBytes<B>, B::Err> {
     B::map_vertex_array_bytes(&self.raw, data_selector).map(VertexArrayMappedBytes::from_raw)
-  }
-
-  pub fn vertex_count(&self) -> usize {
-    self.vertex_count
   }
 }
 

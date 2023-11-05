@@ -162,9 +162,9 @@ impl Backend for DummyBackend {
 
   fn new_vertex_array(
     &self,
-    _vertices: &VertexArrayData,
-    _instances: &VertexArrayData,
-    _indices: &[u32],
+    _vertices: Option<&VertexArrayData>,
+    _instances: Option<&VertexArrayData>,
+    _indices: Option<&[u32]>,
   ) -> Result<Self::VertexArray, Self::Err> {
     Err(DummyBackendError::Unimplemented)
   }

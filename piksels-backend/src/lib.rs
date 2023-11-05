@@ -111,9 +111,9 @@ pub trait Backend: Sized {
   /// Create a new [`VertexArray`].
   fn new_vertex_array(
     &self,
-    vertices: &VertexArrayData,
-    instances: &VertexArrayData,
-    indices: &[u32],
+    vertices: Option<&VertexArrayData>,
+    instances: Option<&VertexArrayData>,
+    indices: Option<&[u32]>,
   ) -> Result<Self::VertexArray, Self::Err>;
 
   /// Drop a [`VertexArray`].

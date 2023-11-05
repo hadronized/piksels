@@ -3,11 +3,11 @@ use crate::vertex::VertexAttr;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct VertexArrayData {
   attrs: Vec<VertexAttr>,
-  layout: MemoryLayout,
+  layout: MemoryLayout<Vec<u8>>,
 }
 
 impl VertexArrayData {
-  pub fn new(attrs: Vec<VertexAttr>, layout: MemoryLayout) -> Self {
+  pub fn new(attrs: Vec<VertexAttr>, layout: MemoryLayout<Vec<u8>>) -> Self {
     VertexArrayData { attrs, layout }
   }
 
@@ -15,7 +15,7 @@ impl VertexArrayData {
     &self.attrs
   }
 
-  pub fn layout(&self) -> &MemoryLayout {
+  pub fn layout(&self) -> &MemoryLayout<Vec<u8>> {
     &self.layout
   }
 
@@ -55,12 +55,12 @@ impl VertexArrayData {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum MemoryLayout {
+pub enum MemoryLayout<T> {
   /// Memory is interleaved; i.e. { x0, y0, r0, g0, b0, x1, y1, r1, g1, b1 }.
-  Interleaved { data: Vec<u8> },
+  Interleaved { data: T },
 
   /// Memory is deinterleaved; i.e. { x0, y0, x1, y1 } { r0, g0, b0, r1, g1, b1 }.
-  Deinterleaved { data_per_attr: Vec<Vec<u8>> },
+  Deinterleaved { data_per_attr: Vec<T> },
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

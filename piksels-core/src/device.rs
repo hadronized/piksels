@@ -56,21 +56,14 @@ where
 
   pub fn new_vertex_array(
     &self,
-    vertices: VertexArrayData,
-    instances: VertexArrayData,
-    indices: impl Into<Vec<u32>>,
+    vertices: impl for<'a> Into<Option<&'a VertexArrayData>>,
+    instances: impl for<'a> Into<Option<&'a VertexArrayData>>,
+    indices: impl for<'a> Into<Option<&'a [u32]>>,
   ) -> Result<VertexArray<B>, B::Err> {
-    let indices = indices.into();
-    let vertex_count = if indices.is_empty() {
-      vertices.len()
-    } else {
-      indices.len()
-    };
-
     self
       .backend
-      .new_vertex_array(&vertices, &instances, &indices)
-      .map(|raw| VertexArray::from_raw(raw, vertex_count))
+      .new_vertex_array(vertices.into(), instances.into(), indices.into())
+      .map(VertexArray::from_raw)
   }
 
   pub fn new_render_targets(
