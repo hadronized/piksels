@@ -102,7 +102,42 @@ where
     attrs: &[VertexAttr],
     data: &[u8],
     instanced: bool,
-  ) -> Result<MemoryLayout<B::Buffer>, B::Err> {
+  ) -> Result<Option<MemoryLayout<B::Buffer>>, B::Err> {
+    if data.is_empty() {
+      // no need to create a vertex buffer
+      return Ok(None);
+    }
+
+    let buf = backend.new_buffer(data)?;
+    Self::set_vertex_pointers(backend, attrs, instanced)?;
+
     todo!()
+  }
+
+  fn set_vertex_pointers(backend: &B, attrs: &[VertexAttr], instanced: bool) -> Result<(), B::Err> {
+    // This function sets the vertex attribute pointers for the input list by computing:
+    //
+    // - The stride: this is easily computed, since it’s the size (bytes) of a single vertex.
+    // - The offsets: each attribute has a given offset in the buffer. This is computed by
+    //   accumulating the size of all previously set attributes and aligning offsets.
+    let stride = attrs.iter().map(VertexAttr::size).sum::<usize>();
+    let offsets = todo!();
+    todo!()
+  }
+
+  fn aligned_offsets(attrs: &[VertexAttr]) -> impl Iterator<Item = usize> {
+    let mut off = 0;
+
+    attrs.iter().map(|attr| {
+      off = Self::off_align(off, attr.align());
+      off += Self::attr
+    })
+  }
+
+  /// Align an offset.
+  #[inline]
+  fn off_align(off: usize, align: usize) -> usize {
+    let a = align - 1;
+    (off + a) & !a
   }
 }
